@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` VARCHAR(36) PRIMARY KEY COMMENT 'UUID',
+  `user_id` VARCHAR(36) NOT NULL COMMENT 'UUID',
+  `title` VARCHAR(150) NOT NULL,
+  `message` TEXT NOT NULL,
+  `is_read` BOOLEAN NOT NULL DEFAULT FALSE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT `fk_notif_users`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `users` (`id`)
+    ON DELETE CASCADE
+);
