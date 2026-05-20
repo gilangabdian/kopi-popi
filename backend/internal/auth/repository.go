@@ -2,8 +2,9 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -12,39 +13,38 @@ type Repository interface {
 }
 
 type authRepository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewRepository(db *sql.DB) Repository {
+func NewRepository(db *gorm.DB) Repository {
 	return &authRepository{db}
 }
 
 func (r *authRepository) CreateUser(ctx context.Context, user *User) error {
-	query := `
-		INSERT INTO users (id, role_id, branch_id, name, email, password_hash, phone)
-		VALUES (?, (SELECT id FROM roles WHERE name = 'Customer' LIMIT 1), ?, ?, ?, ?, ?)
-	`
-	_, err := r.db.ExecContext(ctx, query, user.ID, user.BranchID, user.Name, user.Email, user.PasswordHash, user.Phone)
-	return err
+	// Jika role_id tidak di-set, kita set secara otomatis ke Customer
+	if user.RoleID == 0 {
+		var roleID int
+		err := r.db.WithContext(ctx).Table("roles").Select("id").Where("name = ?", "Customer").Scan(&roleID).Error
+		if err != nil {
+			return err
+		}
+		if roleID == 0 {
+			return errors.New("customer role not found in database")
+		}
+		user.RoleID = roleID
+	}
+
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
 func (r *authRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
-	query := `
-		SELECT id, role_id, branch_id, name, email, password_hash, phone, profile_picture, is_active, created_at, updated_at
-		FROM users WHERE email = ?
-	`
-	row := r.db.QueryRowContext(ctx, query, email)
-
-	var u User
-	err := row.Scan(
-		&u.ID, &u.RoleID, &u.BranchID, &u.Name, &u.Email, &u.PasswordHash,
-		&u.Phone, &u.ProfilePicture, &u.IsActive, &u.CreatedAt, &u.UpdatedAt,
-	)
+	var user User
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // Not found
 		}
 		return nil, err
 	}
-	return &u, nil
+	return &user, nil
 }

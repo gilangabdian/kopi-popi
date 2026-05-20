@@ -1,16 +1,16 @@
 package configs
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-func ConnectDB() *sql.DB {
+func ConnectDB() *gorm.DB {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Warning: Error loading .env file, relying on system environment variables")
@@ -23,7 +23,7 @@ func ConnectDB() *sql.DB {
 	name := os.Getenv("DB_NAME")
 
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user,
 		pass,
 		host,
@@ -31,17 +31,12 @@ func ConnectDB() *sql.DB {
 		name,
 	)
 
-	db, err := sql.Open("mysql", dsn)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to connect to database: ", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Database connected!")
+	fmt.Println("Database connected via GORM!")
 
 	return db
 }
