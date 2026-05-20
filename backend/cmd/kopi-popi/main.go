@@ -11,7 +11,10 @@ func main() {
 	// 1. Inisialisasi Koneksi ke Database
 	// Memastikan database menyala sebelum route dijalankan
 	db := config.ConnectDB()
-	defer db.Close()
+	sqlDB, err := db.DB()
+	if err == nil {
+		defer sqlDB.Close()
+	}
 
 	// 2. Setup Framework Gin (Router)
 	r := gin.Default()
