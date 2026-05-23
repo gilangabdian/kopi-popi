@@ -79,8 +79,8 @@ func (r *userRepository) CreateUser(ctx context.Context, user *User) error {
 
 func (r *userRepository) FindAllEmployees(ctx context.Context) ([]User, error) {
 	var users []User
-	// Role 2 (Manager) dan Role 3 (Cashier)
-	err := r.db.WithContext(ctx).Where("role_id IN (2, 3)").Find(&users).Error
+	// Mengambil semua user (termasuk Admin & Customer)
+	err := r.db.WithContext(ctx).Find(&users).Error
 	return users, err
 }
 

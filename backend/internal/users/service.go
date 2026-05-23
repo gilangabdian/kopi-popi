@@ -12,6 +12,7 @@ import (
 type Service interface {
 	GetMyProfile(ctx context.Context, userID string) (*UserResponse, error)
 	UpdateMyProfile(ctx context.Context, userID string, req UpdateProfileRequest) error
+	DeleteProfilePicture(ctx context.Context, userID string) error
 	UpdateMyPassword(ctx context.Context, userID string, req UpdatePasswordRequest) error
 	RequestEmailOTP(ctx context.Context, userID string, req RequestEmailOTPRequest) error
 	VerifyEmailOTP(ctx context.Context, userID string, req VerifyEmailOTPRequest) error
@@ -70,6 +71,20 @@ func (s *userService) UpdateMyProfile(ctx context.Context, userID string, req Up
 		user.ProfilePicture = *req.ProfilePicture
 	}
 
+	return s.repo.Update(ctx, user)
+}
+
+func (s *userService) DeleteProfilePicture(ctx context.Context, userID string) error {
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	// Hapus foto profil dengan mengatur nilainya menjadi string kosong
+	user.ProfilePicture = ""
 	return s.repo.Update(ctx, user)
 }
 
@@ -226,7 +241,7 @@ func (s *userService) GetEmployees(ctx context.Context, role string, branchID *i
 		return nil, err
 	}
 
-	var responses []UserResponse
+	responses := []UserResponse{} // Inisialisasi slice kosong agar hasilnya [] bukan null
 	for _, u := range users {
 		responses = append(responses, UserResponse{
 			ID:             u.ID,

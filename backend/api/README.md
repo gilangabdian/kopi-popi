@@ -57,7 +57,7 @@ Seluruh endpoint di bawah ini **WAJIB** menyertakan token JWT yang valid. Endpoi
 | Fitur / Domain | Contoh Endpoint Utama | Deskripsi & Akses Ideal |
 | :--- | :--- | :--- |
 | **User Profile** | `/users/me`, `/users/me/password` | Menampilkan/Update profil pribadi, password, dan ganti email. Akses: *Semua Role* |
-| **Employees** | `/users/managers`, `/users/cashiers` | Mendaftarkan staf baru (Manager/Kasir) dan lihat karyawan. Akses: *Admin & Manager* |
+| **Users Management** | `/users`, `/users/managers`, `/users/cashiers` | Mendaftarkan staf baru (Manager/Kasir) dan melihat daftar user. Akses: *Admin & Manager* |
 | **Carts & Sales** | `/carts`, `/transactions` | Menambah keranjang, checkout pesanan. Akses: *Customer & Kasir* |
 | **Inventory** | `/materials`, `/inventories` | Manajemen stok gudang/bahan baku di tiap cabang. Akses: *Admin / Manager* |
 | **Restock** | `/restock-requests` | Meminta/menyetujui penambahan stok antar cabang. Akses: *Manager / Kasir* |

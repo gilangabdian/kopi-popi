@@ -68,12 +68,13 @@ func main() {
 		// Users Profile
 		protectedRoutes.GET("/users/me", usersHandler.GetMyProfile)
 		protectedRoutes.PATCH("/users/me", usersHandler.UpdateMyProfile) // PATCH as per openapi
-		protectedRoutes.PUT("/users/me/password", usersHandler.UpdateMyPassword)
+		protectedRoutes.DELETE("/users/me/profile-picture", usersHandler.DeleteProfilePicture)
+		protectedRoutes.PATCH("/users/me/password", usersHandler.UpdateMyPassword)
 		protectedRoutes.POST("/users/me/request-email-otp", usersHandler.RequestEmailOTP)
 		protectedRoutes.PUT("/users/me/email", usersHandler.VerifyEmailOTP)
 
-		// Employees Management
-		protectedRoutes.GET("/users/employees", usersHandler.GetEmployees)
+		// Users Management(ADMIN)
+		protectedRoutes.GET("/users", usersHandler.GetEmployees)
 		protectedRoutes.POST("/users/managers", usersHandler.CreateManager)
 		protectedRoutes.POST("/users/cashiers", usersHandler.CreateCashier)
 		protectedRoutes.PATCH("/users/:id/disable", usersHandler.DisableEmployee)

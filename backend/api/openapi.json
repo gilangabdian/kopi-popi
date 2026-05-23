@@ -41,6 +41,9 @@
     "/auth/reset-password": {
       "$ref": "./paths/auth.json#/reset-password"
     },
+    "/users": {
+      "$ref": "./paths/users.json#/root"
+    },
     "/users/me": {
       "$ref": "./paths/users.json#/me"
     },
@@ -55,9 +58,6 @@
     },
     "/users/me/email": {
       "$ref": "./paths/users.json#/me-email"
-    },
-    "/users/employees": {
-      "$ref": "./paths/users.json#/employees"
     },
     "/users/managers": {
       "$ref": "./paths/users.json#/managers"

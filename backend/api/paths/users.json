@@ -123,9 +123,10 @@
       }
     }
   },
-  "employees": {
+  "root": {
     "get": {
-      "summary": "Get All Employees (Admin/Manager)",
+      "summary": "Get All Users (Admin/Manager)",
+      "description": "Fetch a list of all users in the system. Admin can see everyone (including other Admins, Managers, Cashiers, and Customers). Manager can only see employees in their branch.",
       "tags": ["Users (Employee Management)"],
       "responses": {
         "200": {
@@ -158,7 +159,7 @@
             "schema": {
               "type": "object",
               "properties": {
-                "branch_id": { "type": "string", "example": "branch-uuid-123" },
+                "branch_id": { "type": "integer", "example": 1 },
                 "name": { "type": "string", "example": "Budi Manager" },
                 "email": { "type": "string", "example": "manager@example.com" },
                 "password": { "type": "string", "example": "password123" }
@@ -198,7 +199,7 @@
   },
   "user-disable": {
     "patch": {
-      "summary": "Disable/Deactivate User",
+      "summary": "Disable/Deactivate User (Admin Only)",
       "tags": ["Users (Employee Management)"],
       "parameters": [
         { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }

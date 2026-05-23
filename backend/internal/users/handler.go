@@ -23,7 +23,7 @@ func (h *Handler) GetMyProfile(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, 200, gin.H{"data": profile})
+	response.Success(c, 200, profile)
 }
 
 // UpdateMyProfile
@@ -42,6 +42,18 @@ func (h *Handler) UpdateMyProfile(c *gin.Context) {
 	}
 
 	response.Success(c, 200, "profile updated successfully")
+}
+
+// DeleteProfilePicture
+func (h *Handler) DeleteProfilePicture(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	if err := h.service.DeleteProfilePicture(c.Request.Context(), userID); err != nil {
+		response.Error(c, 400, err.Error())
+		return
+	}
+
+	response.Success(c, 200, "profile picture deleted successfully")
 }
 
 // UpdateMyPassword
@@ -152,7 +164,7 @@ func (h *Handler) CreateCashier(c *gin.Context) {
 // GetEmployees
 func (h *Handler) GetEmployees(c *gin.Context) {
 	role := c.GetString("role")
-	
+
 	// Cek Role
 	if role != "Admin" && role != "Manager" {
 		response.Error(c, 403, "forbidden: insufficient privileges")
@@ -172,14 +184,14 @@ func (h *Handler) GetEmployees(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, 200, gin.H{"data": employees})
+	response.Success(c, 200, employees)
 }
 
-// DisableEmployee (Admin/Manager)
+// DisableEmployee (Admin Only)
 func (h *Handler) DisableEmployee(c *gin.Context) {
 	role := c.GetString("role")
-	if role != "Admin" && role != "Manager" {
-		response.Error(c, 403, "forbidden: insufficient privileges")
+	if role != "Admin" {
+		response.Error(c, 403, "forbidden: admin role required")
 		return
 	}
 
