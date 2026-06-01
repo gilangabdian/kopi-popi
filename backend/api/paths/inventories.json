@@ -1,0 +1,125 @@
+{
+    "branch-stock": {
+        "get": {
+            "tags": ["Inventory"],
+            "summary": "Get branch stock",
+            "security": [{"BearerAuth": []}],
+            "parameters": [
+                {
+                    "name": "branch_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {"type": "integer"}
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Branch stock retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "../schemas/inventories.json#/BranchStockResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "movements": {
+        "get": {
+            "tags": ["Inventory"],
+            "summary": "Get inventory movements",
+            "security": [{"BearerAuth": []}],
+            "parameters": [
+                {
+                    "name": "branch_id",
+                    "in": "query",
+                    "required": true,
+                    "schema": {"type": "integer"}
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Movements retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "../schemas/inventories.json#/MovementsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "restocks": {
+        "get": {
+            "tags": ["Inventory"],
+            "summary": "Get restock requests",
+            "security": [{"BearerAuth": []}],
+            "responses": {
+                "200": {
+                    "description": "Requests retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "../schemas/inventories.json#/RestockRequestsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "post": {
+            "tags": ["Inventory"],
+            "summary": "Create a new restock request (Manager only)",
+            "security": [{"BearerAuth": []}],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "../schemas/inventories.json#/CreateRestockRequestPayload"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "Request created successfully"
+                }
+            }
+        }
+    },
+    "restocks-status": {
+        "patch": {
+            "tags": ["Inventory"],
+            "summary": "Update restock request status",
+            "security": [{"BearerAuth": []}],
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {"type": "string"}
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "../schemas/inventories.json#/UpdateRestockStatusPayload"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Status updated successfully"
+                }
+            }
+        }
+    }
+}
