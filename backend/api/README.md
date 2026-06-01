@@ -26,6 +26,7 @@ Hingga saat ini, sistem *backend* telah memiliki implementasi penuh untuk domain
 3. **Branch (`internal/branch`)**: CRUD untuk manajemen cabang kedai kopi.
 4. **Catalog (`internal/catalog`)**: Manajemen Kategori, Material (Bahan Baku), dan Produk (termasuk Resep / Bill of Materials). Dilengkapi proteksi rahasia resep.
 5. **Media (`internal/media`)**: Sentralisasi unggah gambar/file dengan proteksi ekstensi (JPG, PNG) dan batas ukuran (5MB). Mendukung folder dinamis.
+6. **Inventory (`internal/inventory`)**: Manajemen stok fisik cabang, buku riwayat mutasi (kartu stok), dan alur logistik permintaan barang antar cabang (Restock Requests) yang sudah dilengkapi dengan fitur persetujuan dan pemberian alasan penolakan (*Rejection Reason*) oleh Admin.
 
 ---
 
@@ -53,24 +54,6 @@ Karena Golang didesain bebas (*unopinionated*), Kopi-Popi menggunakan modul **Me
 
 ---
 
-## 🔓 Public Endpoints (Tanpa Token)
-
-Endpoint berikut bersifat publik dan dapat diakses tanpa mengirimkan header `Authorization`.
-
-| Fitur / Domain | Method | Endpoint | Use Case |
-| :--- | :--- | :--- | :--- |
-| **Auth** | `POST` | `/auth/register` | Customer membuat akun baru. |
-| **Auth** | `POST` | `/auth/login` | Mendapatkan token JWT. |
-| **Auth** | `POST` | `/auth/forgot-password`| Meminta link/token reset password ke email. |
-| **Auth** | `POST` | `/auth/reset-password` | Mengganti password menggunakan token. |
-| **Branch** | `GET` | `/branches` | Menampilkan cabang publik. Admin bisa request *inactive*. |
-| **Catalog** | `GET` | `/categories` | Menampilkan kategori produk. |
-| **Catalog** | `GET` | `/products` | Menampilkan daftar produk (tanpa resep). |
-| **Catalog** | `GET` | `/products/{id}` | Detail produk. Resep disembunyikan kecuali untuk Admin/Manager. |
-
----
-
-## 🔒 Protected Endpoints (Menggunakan Token)
 
 Endpoint berikut **WAJIB** menyertakan token JWT yang valid.
 
@@ -82,6 +65,8 @@ Endpoint berikut **WAJIB** menyertakan token JWT yang valid.
 | **Catalog (Material)**| `/materials` (CRUD) | *Admin & Manager* |
 | **Catalog (Product)**| `/products` (POST, PUT, DELETE) | *Admin* |
 | **Media / Uploads** | `/uploads` (`POST`) | *Semua Pengguna Terdaftar* |
+| **Inventory**| `/inventories/branches/:id`| *Admin & Manager* |
+| **Inventory**| `/inventories/restocks` | *Admin & Manager* |
 
 ---
 

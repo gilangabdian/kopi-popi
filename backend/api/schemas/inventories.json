@@ -1,0 +1,127 @@
+{
+    "BranchStockResponse": {
+        "type": "object",
+        "properties": {
+            "code": {"type": "integer", "example": 200},
+            "data": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "branch_id": {"type": "integer"},
+                        "material_id": {"type": "integer"},
+                        "material": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "integer"},
+                                "name": {"type": "string"},
+                                "unit": {"type": "string"}
+                            }
+                        },
+                        "quantity": {"type": "number"}
+                    }
+                }
+            }
+        }
+    },
+    "MovementsResponse": {
+        "type": "object",
+        "properties": {
+            "code": {"type": "integer", "example": 200},
+            "data": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "branch_id": {"type": "integer"},
+                        "material_id": {"type": "integer"},
+                        "material": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "integer"},
+                                "name": {"type": "string"},
+                                "unit": {"type": "string"}
+                            }
+                        },
+                        "movement_type": {"type": "string", "example": "IN"},
+                        "quantity": {"type": "number"},
+                        "description": {"type": "string"},
+                        "created_at": {"type": "string", "format": "date-time"}
+                    }
+                }
+            }
+        }
+    },
+    "RestockRequestsResponse": {
+        "type": "object",
+        "properties": {
+            "code": {"type": "integer", "example": 200},
+            "data": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "branch_id": {"type": "integer"},
+                        "requested_by": {"type": "string"},
+                        "status": {"type": "string", "example": "Pending"},
+                        "reason": {"type": "string"},
+                        "rejection_reason": {"type": "string", "nullable": true},
+                        "created_at": {"type": "string", "format": "date-time"},
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "material_id": {"type": "integer"},
+                                    "material": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {"type": "string"},
+                                            "unit": {"type": "string"}
+                                        }
+                                    },
+                                    "quantity_requested": {"type": "number"}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "CreateRestockRequestPayload": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+            "reason": {"type": "string"},
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["material_id", "quantity_requested"],
+                    "properties": {
+                        "material_id": {"type": "integer"},
+                        "quantity_requested": {"type": "number"}
+                    }
+                }
+            }
+        }
+    },
+    "UpdateRestockStatusPayload": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["Approved", "Rejected", "Delivered"]
+            },
+            "rejection_reason": {
+                "type": "string",
+                "nullable": true
+            }
+        }
+    }
+}

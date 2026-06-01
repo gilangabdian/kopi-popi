@@ -92,20 +92,17 @@
     "/branches/{id}": {
       "$ref": "./paths/branches.json#/branch-detail"
     },
-    "/inventories": {
-      "$ref": "./paths/inventory.json#/inventories"
+    "/inventories/branches/{branch_id}": {
+      "$ref": "./paths/inventories.json#/branch-stock"
     },
-    "/inventory-movements": {
-      "$ref": "./paths/inventory.json#/inventory-movements"
+    "/inventories/movements": {
+      "$ref": "./paths/inventories.json#/movements"
     },
-    "/restock-requests": {
-      "$ref": "./paths/inventory.json#/restock-requests"
+    "/inventories/restocks": {
+      "$ref": "./paths/inventories.json#/restocks"
     },
-    "/restock-requests/{id}/approve": {
-      "$ref": "./paths/inventory.json#/restock-approve"
-    },
-    "/restock-requests/{id}/reject": {
-      "$ref": "./paths/inventory.json#/restock-reject"
+    "/inventories/restocks/{id}/status": {
+      "$ref": "./paths/inventories.json#/restocks-status"
     },
     "/carts": {
       "$ref": "./paths/sales.json#/carts"

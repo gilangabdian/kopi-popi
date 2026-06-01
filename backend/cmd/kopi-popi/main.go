@@ -5,6 +5,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/auth"
 	"github.com/gilangages/kopi-popi/internal/branch"
 	"github.com/gilangages/kopi-popi/internal/catalog"
+	"github.com/gilangages/kopi-popi/internal/inventory"
 	"github.com/gilangages/kopi-popi/internal/media"
 	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/gilangages/kopi-popi/pkg/middleware"
@@ -68,6 +69,11 @@ func main() {
 	mediaService := media.NewService()
 	mediaHandler := media.NewHandler(mediaService)
 
+	// 5f. Inisialisasi Domain Inventory
+	inventoryRepo := inventory.NewRepository(db)
+	inventoryService := inventory.NewService(inventoryRepo)
+	inventoryHandler := inventory.NewHandler(inventoryService)
+
 	// 6. Daftarkan router per-domain (Public)
 	authRoutes := r.Group("/auth")
 	{
@@ -120,6 +126,13 @@ func main() {
 		protectedRoutes.POST("/products", catalogHandler.CreateProduct)
 		protectedRoutes.PUT("/products/:id", catalogHandler.UpdateProduct)
 		protectedRoutes.DELETE("/products/:id", catalogHandler.DeleteProduct)
+
+		// Inventory Management (ADMIN & MANAGER)
+		protectedRoutes.GET("/inventories/branches/:branch_id", inventoryHandler.GetBranchStock)
+		protectedRoutes.GET("/inventories/movements", inventoryHandler.GetInventoryMovements)
+		protectedRoutes.GET("/inventories/restocks", inventoryHandler.GetRestockRequests)
+		protectedRoutes.POST("/inventories/restocks", inventoryHandler.CreateRestockRequest)
+		protectedRoutes.PATCH("/inventories/restocks/:id/status", inventoryHandler.UpdateRestockStatus)
 	}
 
 	// 8. Daftarkan router dengan Optional Auth (untuk public route yang behavior-nya berubah jika login)

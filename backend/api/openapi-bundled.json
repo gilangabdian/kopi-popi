@@ -1030,126 +1030,137 @@
         }
       }
     },
-    "/inventories": {
+    "/inventories/branches/{branch_id}": {
       "get": {
-        "summary": "Get Branch Inventory",
         "tags": [
           "Inventory"
+        ],
+        "summary": "Get branch stock",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Branch stock retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchStockResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/movements": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "Get inventory movements",
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ],
         "parameters": [
           {
             "name": "branch_id",
             "in": "query",
+            "required": true,
             "schema": {
               "type": "integer"
-            },
-            "example": 1
+            }
           }
         ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "Movements retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementsResponse"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/inventory-movements": {
+    "/inventories/restocks": {
       "get": {
-        "summary": "Get Inventory Movements",
         "tags": [
           "Inventory"
         ],
+        "summary": "Get restock requests",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
-          }
-        }
-      }
-    },
-    "/restock-requests": {
-      "post": {
-        "summary": "Create Restock Request",
-        "tags": [
-          "Restock Requests"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "branch_id": {
-                    "type": "integer",
-                    "example": 2
-                  },
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "material_id": {
-                          "type": "integer",
-                          "example": 1
-                        },
-                        "quantity_requested": {
-                          "type": "number",
-                          "example": 10
-                        }
-                      }
-                    }
-                  }
+            "description": "Requests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestockRequestsResponse"
                 }
               }
             }
-          }
-        },
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
           }
         }
       },
-      "get": {
-        "summary": "Get Restock Requests",
+      "post": {
         "tags": [
-          "Restock Requests"
+          "Inventory"
         ],
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
-          }
-        }
-      }
-    },
-    "/restock-requests/{id}/approve": {
-      "patch": {
-        "summary": "Approve Restock Request",
-        "tags": [
-          "Restock Requests"
-        ],
-        "parameters": [
+        "summary": "Create a new restock request (Manager only)",
+        "security": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRestockRequestPayload"
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+          "201": {
+            "description": "Request created successfully"
           }
         }
       }
     },
-    "/restock-requests/{id}/reject": {
+    "/inventories/restocks/{id}/status": {
       "patch": {
-        "summary": "Reject Restock Request",
         "tags": [
-          "Restock Requests"
+          "Inventory"
+        ],
+        "summary": "Update restock request status",
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ],
         "parameters": [
           {
@@ -1157,7 +1168,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -1166,20 +1177,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "type": "string",
-                    "example": "Stock kosong"
-                  }
-                }
+                "$ref": "#/components/schemas/UpdateRestockStatusPayload"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "Status updated successfully"
           }
         }
       }
@@ -1935,6 +1940,218 @@
           "is_active": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "BranchStockResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "branch_id": {
+                  "type": "integer"
+                },
+                "material_id": {
+                  "type": "integer"
+                },
+                "material": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "quantity": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MovementsResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "branch_id": {
+                  "type": "integer"
+                },
+                "material_id": {
+                  "type": "integer"
+                },
+                "material": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "movement_type": {
+                  "type": "string",
+                  "example": "IN"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "RestockRequestsResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "branch_id": {
+                  "type": "integer"
+                },
+                "requested_by": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "Pending"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "rejection_reason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "material_id": {
+                        "type": "integer"
+                      },
+                      "material": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "unit": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "quantity_requested": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateRestockRequestPayload": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "material_id",
+                "quantity_requested"
+              ],
+              "properties": {
+                "material_id": {
+                  "type": "integer"
+                },
+                "quantity_requested": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "UpdateRestockStatusPayload": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "Approved",
+              "Rejected",
+              "Delivered"
+            ]
+          },
+          "rejection_reason": {
+            "type": "string",
+            "nullable": true
           }
         }
       }
