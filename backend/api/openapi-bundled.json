@@ -1030,6 +1030,72 @@
         }
       }
     },
+    "/branches/{id}/operating-hours": {
+      "patch": {
+        "summary": "Update Operating Hours (Admin Only)",
+        "tags": [
+          "Branches"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOperatingHoursRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GenericSuccess"
+          }
+        }
+      }
+    },
+    "/branches/{id}/accepting-orders": {
+      "patch": {
+        "summary": "Toggle Accepting Orders / Emergency Open Close (Admin, Manager, Cashier)",
+        "tags": [
+          "Branches"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAcceptingOrdersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GenericSuccess"
+          }
+        }
+      }
+    },
     "/inventories/branches/{branch_id}": {
       "get": {
         "tags": [
@@ -1189,226 +1255,235 @@
         }
       }
     },
-    "/carts": {
-      "get": {
-        "summary": "Get My Cart",
+    "/carts/offline": {
+      "post": {
+        "summary": "Init Offline Cart (Cashier)",
         "tags": [
-          "Carts"
+          "Sales"
         ],
-        "parameters": [
+        "security": [
           {
-            "name": "branch_id",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            },
-            "example": 1
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitOfflineCartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/carts/me": {
+      "get": {
+        "summary": "Get My Cart (Customer) / Get Offline Carts (Cashier)",
+        "tags": [
+          "Sales"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
           }
         ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Cart"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/carts/items": {
       "post": {
-        "summary": "Add Item To Cart",
+        "summary": "Add Item to Cart (Customer)",
         "tags": [
-          "Carts"
+          "Sales"
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "branch_id": {
-                    "type": "integer",
-                    "example": 1
-                  },
-                  "product_id": {
-                    "type": "integer",
-                    "example": 2
-                  },
-                  "quantity": {
-                    "type": "integer",
-                    "example": 3
-                  },
-                  "notes": {
-                    "type": "string",
-                    "example": "Less sugar"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
-          }
-        }
-      }
-    },
-    "/carts/items/{id}": {
-      "patch": {
-        "summary": "Update Cart Item",
-        "tags": [
-          "Carts"
-        ],
-        "parameters": [
+        "security": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
+            "BearerAuth": []
           }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "quantity": {
-                    "type": "integer",
-                    "example": 5
-                  },
-                  "notes": {
-                    "type": "string",
-                    "example": "Extra ice"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete Cart Item",
-        "tags": [
-          "Carts"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
-          }
-        }
-      }
-    },
-    "/transactions": {
-      "post": {
-        "summary": "Checkout Transaction",
-        "tags": [
-          "Transactions"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "branch_id": {
-                    "type": "integer",
-                    "example": 1
-                  },
-                  "order_type": {
-                    "type": "string",
-                    "example": "Online_Pickup"
-                  },
-                  "payment_method": {
-                    "type": "string",
-                    "example": "QRIS"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/GenericSuccess"
-          }
-        }
-      },
-      "get": {
-        "summary": "Get All Transactions",
-        "tags": [
-          "Transactions"
         ],
         "parameters": [
           {
             "name": "branch_id",
             "in": "query",
+            "required": true,
             "schema": {
               "type": "integer"
-            },
-            "example": 1
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "example": "Paid"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            },
-            "example": 1
+            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCartItemRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "$ref": "#/components/responses/GenericSuccess"
+          }
+        }
+      }
+    },
+    "/carts/{id}/items": {
+      "post": {
+        "summary": "Add Item to Offline Cart (Cashier)",
+        "tags": [
+          "Sales"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCartItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GenericSuccess"
+          }
+        }
+      }
+    },
+    "/checkout": {
+      "post": {
+        "summary": "Checkout (Customer/Cashier)",
+        "tags": [
+          "Sales"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Transaction"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/transactions/me": {
       "get": {
-        "summary": "Get My Transactions",
+        "summary": "Get My Transactions (Customer)",
         "tags": [
-          "Transactions"
+          "Sales"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/transactions/{id}": {
       "get": {
-        "summary": "Get Transaction Detail",
+        "summary": "Get Transaction by ID",
         "tags": [
-          "Transactions"
+          "Sales"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ],
         "parameters": [
           {
@@ -1416,22 +1491,39 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Transaction"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/transactions/{id}/status": {
       "patch": {
-        "summary": "Update Transaction Status",
+        "summary": "Update Transaction Status (Cashier/Manager)",
         "tags": [
-          "Transactions"
+          "Sales"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ],
         "parameters": [
           {
@@ -1439,26 +1531,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "example": "Preparing"
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "$ref": "#/components/responses/GenericSuccess"
@@ -1899,6 +1975,18 @@
           "is_active": {
             "type": "boolean"
           },
+          "opening_time": {
+            "type": "string",
+            "example": "08:00:00"
+          },
+          "closing_time": {
+            "type": "string",
+            "example": "22:00:00"
+          },
+          "is_accepting_orders": {
+            "type": "boolean",
+            "example": true
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -1940,6 +2028,35 @@
           "is_active": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "UpdateOperatingHoursRequest": {
+        "type": "object",
+        "required": [
+          "opening_time",
+          "closing_time"
+        ],
+        "properties": {
+          "opening_time": {
+            "type": "string",
+            "example": "08:00:00"
+          },
+          "closing_time": {
+            "type": "string",
+            "example": "22:00:00"
+          }
+        }
+      },
+      "UpdateAcceptingOrdersRequest": {
+        "type": "object",
+        "required": [
+          "is_accepting_orders"
+        ],
+        "properties": {
+          "is_accepting_orders": {
+            "type": "boolean",
+            "example": false
           }
         }
       },
@@ -2152,6 +2269,239 @@
           "rejection_reason": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "InitOfflineCartRequest": {
+        "type": "object",
+        "required": [
+          "cart_name"
+        ],
+        "properties": {
+          "cart_name": {
+            "type": "string",
+            "example": "Meja 4 - Mas Baju Merah"
+          }
+        },
+        "example": {
+          "cart_name": "Meja 4 - Mas Baju Merah"
+        }
+      },
+      "Product-2": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "CartItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "cart_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "product": {
+            "$ref": "#/components/schemas/Product-2"
+          }
+        }
+      },
+      "Cart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cart_name": {
+            "type": "string"
+          },
+          "branch_id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItem"
+            }
+          }
+        }
+      },
+      "AddCartItemRequest": {
+        "type": "object",
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "quantity": {
+            "type": "integer",
+            "example": 2
+          },
+          "notes": {
+            "type": "string",
+            "example": "Es sedikit"
+          }
+        },
+        "example": {
+          "product_id": 1,
+          "quantity": 2,
+          "notes": "Es sedikit aja ya"
+        }
+      },
+      "CheckoutRequest": {
+        "type": "object",
+        "required": [
+          "cart_id",
+          "order_type",
+          "payment_method"
+        ],
+        "properties": {
+          "cart_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order_type": {
+            "type": "string",
+            "example": "Online_Pickup"
+          },
+          "payment_method": {
+            "type": "string",
+            "example": "QRIS"
+          },
+          "amount_tendered": {
+            "type": "number",
+            "example": 50000
+          }
+        },
+        "example": {
+          "cart_id": "masukkan-uuid-cart-disini",
+          "order_type": "Offline_DineIn",
+          "payment_method": "CASH",
+          "amount_tendered": 50000
+        }
+      },
+      "TransactionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "transaction_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "product": {
+            "$ref": "#/components/schemas/Product-2"
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "branch_id": {
+            "type": "integer"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cashier_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shift_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order_type": {
+            "type": "string",
+            "example": "Online_Pickup"
+          },
+          "payment_method": {
+            "type": "string",
+            "example": "QRIS"
+          },
+          "total_amount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "example": "Paid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionDetail"
+            }
           }
         }
       }

@@ -22,6 +22,7 @@ type Service interface {
 	// Product
 	GetAllProducts(ctx context.Context, categoryID *int, search string) ([]Product, error)
 	GetProductDetail(ctx context.Context, id int, role string, includeRecipe bool) (*Product, error)
+	GetProductsBOM(ctx context.Context, productIDs []int) (map[int][]ProductBOM, error)
 	CreateProduct(ctx context.Context, req ProductRequest) error
 	UpdateProduct(ctx context.Context, id int, req ProductRequest) error
 	DeleteProduct(ctx context.Context, id int) error
@@ -153,6 +154,27 @@ func (s *service) GetProductDetail(ctx context.Context, id int, role string, inc
 	}
 
 	return product, nil
+}
+
+func (s *service) GetProductsBOM(ctx context.Context, productIDs []int) (map[int][]ProductBOM, error) {
+	result := make(map[int][]ProductBOM)
+	if len(productIDs) == 0 {
+		return result, nil
+	}
+
+	for _, pid := range productIDs {
+		product, err := s.repo.FindProductByID(ctx, pid)
+		if err != nil {
+			return nil, err
+		}
+		if product != nil && product.Recipe != nil {
+			result[pid] = product.Recipe
+		} else {
+			result[pid] = []ProductBOM{}
+		}
+	}
+	
+	return result, nil
 }
 
 func (s *service) CreateProduct(ctx context.Context, req ProductRequest) error {

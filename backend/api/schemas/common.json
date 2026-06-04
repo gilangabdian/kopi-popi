@@ -42,6 +42,9 @@
       "name": { "type": "string" },
       "address": { "type": "string" },
       "is_active": { "type": "boolean" },
+      "opening_time": { "type": "string", "example": "08:00:00" },
+      "closing_time": { "type": "string", "example": "22:00:00" },
+      "is_accepting_orders": { "type": "boolean", "example": true },
       "created_at": { "type": "string", "format": "date-time" },
       "updated_at": { "type": "string", "format": "date-time" }
     }
@@ -60,6 +63,21 @@
       "name": { "type": "string", "example": "Cabang Bandung Baru" },
       "address": { "type": "string", "example": "Jl. Braga No. 15, Bandung" },
       "is_active": { "type": "boolean", "example": true }
+    }
+  },
+  "UpdateOperatingHoursRequest": {
+    "type": "object",
+    "required": ["opening_time", "closing_time"],
+    "properties": {
+      "opening_time": { "type": "string", "example": "08:00:00" },
+      "closing_time": { "type": "string", "example": "22:00:00" }
+    }
+  },
+  "UpdateAcceptingOrdersRequest": {
+    "type": "object",
+    "required": ["is_accepting_orders"],
+    "properties": {
+      "is_accepting_orders": { "type": "boolean", "example": false }
     }
   }
 }

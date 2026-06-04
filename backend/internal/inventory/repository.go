@@ -16,6 +16,7 @@ type Repository interface {
 	CreateRestockRequest(req *RestockRequest) error
 	UpdateRestockStatus(id string, status string, rejectionReason *string) error
 	MarkAsDeliveredAndAddStock(requestID string) error
+	DeductStock(tx *gorm.DB, branchID int, materialID int, quantity float64, description string) error
 }
 
 type repository struct {
@@ -140,4 +141,44 @@ func (r *repository) MarkAsDeliveredAndAddStock(requestID string) error {
 		// Semua sukses, commit otomatis
 		return nil
 	})
+}
+
+// DeductStock dipanggil saat transaksi sales berhasil. Kita biarkan stok negatif untuk kebebasan aplikasi POS
+func (r *repository) DeductStock(tx *gorm.DB, branchID int, materialID int, quantity float64, description string) error {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	// 1. Catat Movement
+	movement := InventoryMovement{
+		ID:           uuid.NewString(),
+		BranchID:     branchID,
+		MaterialID:   materialID,
+		MovementType: "OUT",
+		Quantity:     quantity,
+		Description:  description,
+		CreatedAt:    time.Now(),
+	}
+	if err := db.Create(&movement).Error; err != nil {
+		return err
+	}
+
+	// 2. Potong Stok (Upsert agar bisa langsung minus jika barang baru di menu tapi stok di DB belum diisi)
+	var inv BranchInventory
+	err := db.Where("branch_id = ? AND material_id = ?", branchID, materialID).First(&inv).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		inv = BranchInventory{
+			BranchID:   branchID,
+			MaterialID: materialID,
+			Quantity:   -quantity, // Stok jadi minus karena transaksi, tapi data stok asli belum pernah dimasukkan.
+		}
+		return db.Create(&inv).Error
+	} else {
+		return db.Model(&inv).Update("quantity", inv.Quantity-quantity).Error
+	}
 }

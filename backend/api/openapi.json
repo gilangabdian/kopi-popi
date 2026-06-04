@@ -92,6 +92,12 @@
     "/branches/{id}": {
       "$ref": "./paths/branches.json#/branch-detail"
     },
+    "/branches/{id}/operating-hours": {
+      "$ref": "./paths/branches.json#/operating-hours"
+    },
+    "/branches/{id}/accepting-orders": {
+      "$ref": "./paths/branches.json#/accepting-orders"
+    },
     "/inventories/branches/{branch_id}": {
       "$ref": "./paths/inventories.json#/branch-stock"
     },
@@ -104,16 +110,19 @@
     "/inventories/restocks/{id}/status": {
       "$ref": "./paths/inventories.json#/restocks-status"
     },
-    "/carts": {
+    "/carts/offline": {
+      "$ref": "./paths/sales.json#/init-offline-cart"
+    },
+    "/carts/me": {
       "$ref": "./paths/sales.json#/carts"
     },
     "/carts/items": {
       "$ref": "./paths/sales.json#/cart-items"
     },
-    "/carts/items/{id}": {
+    "/carts/{id}/items": {
       "$ref": "./paths/sales.json#/cart-item-detail"
     },
-    "/transactions": {
+    "/checkout": {
       "$ref": "./paths/sales.json#/transactions"
     },
     "/transactions/me": {

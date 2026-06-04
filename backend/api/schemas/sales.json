@@ -1,0 +1,136 @@
+{
+  "Shift": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "branch_id": { "type": "integer" },
+      "cashier_id": { "type": "string", "format": "uuid" },
+      "start_time": { "type": "string", "format": "date-time" },
+      "end_time": { "type": "string", "format": "date-time" },
+      "starting_cash": { "type": "number" },
+      "expected_cash": { "type": "number" },
+      "actual_cash": { "type": "number" },
+      "status": { "type": "string", "example": "Open" },
+      "updated_at": { "type": "string", "format": "date-time" }
+    }
+  },
+  "CartItem": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer" },
+      "cart_id": { "type": "string", "format": "uuid" },
+      "product_id": { "type": "integer" },
+      "quantity": { "type": "integer" },
+      "notes": { "type": "string" },
+      "product": { "$ref": "common.json#/Product" }
+    }
+  },
+  "Cart": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "customer_id": { "type": "string", "format": "uuid" },
+      "cart_name": { "type": "string" },
+      "branch_id": { "type": "integer" },
+      "created_at": { "type": "string", "format": "date-time" },
+      "updated_at": { "type": "string", "format": "date-time" },
+      "items": {
+        "type": "array",
+        "items": { "$ref": "#/CartItem" }
+      }
+    }
+  },
+  "TransactionDetail": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer" },
+      "transaction_id": { "type": "string", "format": "uuid" },
+      "product_id": { "type": "integer" },
+      "quantity": { "type": "integer" },
+      "subtotal": { "type": "number" },
+      "notes": { "type": "string" },
+      "product": { "$ref": "common.json#/Product" }
+    }
+  },
+  "Transaction": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "branch_id": { "type": "integer" },
+      "customer_id": { "type": "string", "format": "uuid" },
+      "cashier_id": { "type": "string", "format": "uuid" },
+      "shift_id": { "type": "string", "format": "uuid" },
+      "order_type": { "type": "string", "example": "Online_Pickup" },
+      "payment_method": { "type": "string", "example": "QRIS" },
+      "total_amount": { "type": "number" },
+      "status": { "type": "string", "example": "Paid" },
+      "created_at": { "type": "string", "format": "date-time" },
+      "updated_at": { "type": "string", "format": "date-time" },
+      "details": {
+        "type": "array",
+        "items": { "$ref": "#/TransactionDetail" }
+      }
+    }
+  },
+  "OpenShiftRequest": {
+    "type": "object",
+    "required": ["starting_cash"],
+    "properties": {
+      "starting_cash": { "type": "number", "example": 100000 }
+    },
+    "example": {
+      "starting_cash": 100000
+    }
+  },
+  "CloseShiftRequest": {
+    "type": "object",
+    "required": ["actual_cash"],
+    "properties": {
+      "actual_cash": { "type": "number", "example": 150000 }
+    },
+    "example": {
+      "actual_cash": 150000
+    }
+  },
+  "InitOfflineCartRequest": {
+    "type": "object",
+    "required": ["cart_name"],
+    "properties": {
+      "cart_name": { "type": "string", "example": "Meja 4 - Mas Baju Merah" }
+    },
+    "example": {
+      "cart_name": "Meja 4 - Mas Baju Merah"
+    }
+  },
+  "AddCartItemRequest": {
+    "type": "object",
+    "required": ["product_id", "quantity"],
+    "properties": {
+      "product_id": { "type": "integer", "example": 1 },
+      "quantity": { "type": "integer", "example": 2 },
+      "notes": { "type": "string", "example": "Es sedikit" }
+    },
+    "example": {
+      "product_id": 1,
+      "quantity": 2,
+      "notes": "Es sedikit aja ya"
+    }
+  },
+  "CheckoutRequest": {
+    "type": "object",
+    "required": ["cart_id", "order_type", "payment_method"],
+    "properties": {
+      "cart_id": { "type": "string", "format": "uuid" },
+      "order_type": { "type": "string", "example": "Online_Pickup" },
+      "payment_method": { "type": "string", "example": "QRIS" },
+      "amount_tendered": { "type": "number", "example": 50000 }
+    },
+    "example": {
+      "cart_id": "masukkan-uuid-cart-disini",
+      "order_type": "Offline_DineIn",
+      "payment_method": "CASH",
+      "amount_tendered": 50000
+    }
+  }
+}
+

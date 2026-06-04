@@ -1,129 +1,195 @@
 {
+    "init-offline-cart": {
+    "post": {
+      "summary": "Init Offline Cart (Cashier)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "../schemas/sales.json#/InitOfflineCartRequest" }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "../schemas/sales.json#/Cart" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "carts": {
     "get": {
-      "summary": "Get My Cart",
-      "tags": ["Carts"],
-      "parameters": [{ "name": "branch_id", "in": "query", "schema": { "type": "integer" }, "example": 1 }],
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
+      "summary": "Get My Cart (Customer) / Get Offline Carts (Cashier)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "../schemas/sales.json#/Cart" }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "cart-items": {
     "post": {
-      "summary": "Add Item To Cart",
-      "tags": ["Carts"],
+      "summary": "Add Item to Cart (Customer)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "parameters": [
+        {
+          "name": "branch_id",
+          "in": "query",
+          "required": true,
+          "schema": { "type": "integer" }
+        }
+      ],
       "requestBody": {
         "required": true,
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "branch_id": { "type": "integer", "example": 1 },
-                "product_id": { "type": "integer", "example": 2 },
-                "quantity": { "type": "integer", "example": 3 },
-                "notes": { "type": "string", "example": "Less sugar" }
-              }
-            }
+            "schema": { "$ref": "../schemas/sales.json#/AddCartItemRequest" }
           }
         }
       },
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
+      "responses": {
+        "200": { "$ref": "../responses/common.json#/GenericSuccess" }
+      }
     }
   },
   "cart-item-detail": {
-    "patch": {
-      "summary": "Update Cart Item",
-      "tags": ["Carts"],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+    "post": {
+      "summary": "Add Item to Offline Cart (Cashier)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
       "requestBody": {
         "required": true,
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "quantity": { "type": "integer", "example": 5 },
-                "notes": { "type": "string", "example": "Extra ice" }
-              }
-            }
+            "schema": { "$ref": "../schemas/sales.json#/AddCartItemRequest" }
           }
         }
       },
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
-    },
-    "delete": {
-      "summary": "Delete Cart Item",
-      "tags": ["Carts"],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
+      "responses": {
+        "200": { "$ref": "../responses/common.json#/GenericSuccess" }
+      }
     }
   },
   "transactions": {
     "post": {
-      "summary": "Checkout Transaction",
-      "tags": ["Transactions"],
+      "summary": "Checkout (Customer/Cashier)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
       "requestBody": {
         "required": true,
         "content": {
           "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "branch_id": { "type": "integer", "example": 1 },
-                "order_type": { "type": "string", "example": "Online_Pickup" },
-                "payment_method": { "type": "string", "example": "QRIS" }
+            "schema": { "$ref": "../schemas/sales.json#/CheckoutRequest" }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "../schemas/sales.json#/Transaction" }
+                }
               }
             }
           }
         }
-      },
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
-    },
-    "get": {
-      "summary": "Get All Transactions",
-      "tags": ["Transactions"],
-      "parameters": [
-        { "name": "branch_id", "in": "query", "schema": { "type": "integer" }, "example": 1 },
-        { "name": "status", "in": "query", "schema": { "type": "string" }, "example": "Paid" },
-        { "name": "page", "in": "query", "schema": { "type": "integer" }, "example": 1 }
-      ],
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
+      }
     }
   },
   "transactions-me": {
     "get": {
-      "summary": "Get My Transactions",
-      "tags": ["Transactions"],
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
-    }
-  },
-  "transaction-detail": {
-    "get": {
-      "summary": "Get Transaction Detail",
-      "tags": ["Transactions"],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
-    }
-  },
-  "transaction-status": {
-    "patch": {
-      "summary": "Update Transaction Status",
-      "tags": ["Transactions"],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-      "requestBody": {
-        "required": true,
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "status": { "type": "string", "example": "Preparing" }
+      "summary": "Get My Transactions (Customer)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "../schemas/sales.json#/Transaction" }
+                  }
+                }
               }
             }
           }
         }
-      },
-      "responses": { "200": { "$ref": "../responses/common.json#/GenericSuccess" } }
+      }
+    }
+  },
+  "transaction-detail": {
+    "get": {
+      "summary": "Get Transaction by ID",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "../schemas/sales.json#/Transaction" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "transaction-status": {
+    "patch": {
+      "summary": "Update Transaction Status (Cashier/Manager)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "responses": {
+        "200": { "$ref": "../responses/common.json#/GenericSuccess" }
+      }
     }
   }
 }
+
