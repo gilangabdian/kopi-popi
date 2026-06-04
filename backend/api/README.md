@@ -27,6 +27,7 @@ Hingga saat ini, sistem *backend* telah memiliki implementasi penuh untuk domain
 4. **Catalog (`internal/catalog`)**: Manajemen Kategori, Material (Bahan Baku), dan Produk (termasuk Resep / Bill of Materials). Dilengkapi proteksi rahasia resep.
 5. **Media (`internal/media`)**: Sentralisasi unggah gambar/file dengan proteksi ekstensi (JPG, PNG) dan batas ukuran (5MB). Mendukung folder dinamis.
 6. **Inventory (`internal/inventory`)**: Manajemen stok fisik cabang, buku riwayat mutasi (kartu stok), dan alur logistik permintaan barang antar cabang (Restock Requests) yang sudah dilengkapi dengan fitur persetujuan dan pemberian alasan penolakan (*Rejection Reason*) oleh Admin.
+7. **Sales (`internal/sales`)**: Inti dari sistem POS (Point of Sales). Mengurus *Shift* Kasir (Buka/Tutup Kasir dengan rekonsiliasi kas), *Cart* Online (Pelanggan) & Offline (Hold Bill / Meja), dan *Checkout* transaksi yang otomatis memotong stok *Inventory* berbasis resep (*Bill of Materials*).
 
 ---
 

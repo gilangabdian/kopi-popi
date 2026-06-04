@@ -3,6 +3,8 @@ package inventory
 import (
 	"errors"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 type Service interface {
@@ -11,6 +13,7 @@ type Service interface {
 	GetRestockRequests(requestingRole string, requestingBranchID *int) ([]RestockRequest, error)
 	CreateRestockRequest(req *RestockRequest, requestingRole string, requestingBranchID *int) error
 	UpdateRestockStatus(id string, newStatus string, rejectionReason *string, requestingRole string, requestingBranchID *int) error
+	DeductStock(tx interface{}, branchID int, materialID int, quantity float64, description string) error
 }
 
 type service struct {
@@ -112,4 +115,12 @@ func (s *service) UpdateRestockStatus(id string, newStatus string, rejectionReas
 	}
 
 	return errors.New("invalid: unknown status")
+}
+
+func (s *service) DeductStock(tx interface{}, branchID int, materialID int, quantity float64, description string) error {
+	importGormDB, ok := tx.(*gorm.DB)
+	if !ok && tx != nil {
+		return errors.New("invalid transaction type")
+	}
+	return s.repo.DeductStock(importGormDB, branchID, materialID, quantity, description)
 }

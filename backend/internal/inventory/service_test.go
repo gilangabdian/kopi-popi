@@ -2,6 +2,7 @@ package inventory_test
 
 import (
 	"testing"
+	"gorm.io/gorm"
 
 	"github.com/gilangages/kopi-popi/internal/inventory"
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,10 @@ func (m *MockRepository) UpdateRestockStatus(id string, status string, rejection
 }
 func (m *MockRepository) MarkAsDeliveredAndAddStock(requestID string) error {
 	args := m.Called(requestID)
+	return args.Error(0)
+}
+func (m *MockRepository) DeductStock(tx *gorm.DB, branchID int, materialID int, quantity float64, description string) error {
+	args := m.Called(tx, branchID, materialID, quantity, description)
 	return args.Error(0)
 }
 
@@ -149,4 +154,5 @@ func TestUpdateStatus_Rejected_Success(t *testing.T) {
 	assert.NoError(t, err)
 	mockRepo.AssertCalled(t, "UpdateRestockStatus", reqID, "Rejected", &reason)
 }
+
 

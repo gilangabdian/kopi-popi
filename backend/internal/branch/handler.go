@@ -110,3 +110,67 @@ func (h *Handler) DeleteBranch(c *gin.Context) {
 	
 	response.Success(c, 200, "branch soft-deleted successfully")
 }
+
+// UpdateOperatingHours (Admin Only)
+func (h *Handler) UpdateOperatingHours(c *gin.Context) {
+	role := c.GetString("role")
+	
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		response.Error(c, 400, "invalid branch id")
+		return
+	}
+	
+	var req UpdateOperatingHoursRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, 400, "invalid payload: "+err.Error())
+		return
+	}
+	
+	if err := h.service.UpdateOperatingHours(c.Request.Context(), id, req, role); err != nil {
+		if err.Error() == "forbidden: only admin can update operating hours" {
+			response.Error(c, 403, err.Error())
+			return
+		}
+		response.Error(c, 400, err.Error())
+		return
+	}
+	
+	response.Success(c, 200, "operating hours updated successfully")
+}
+
+// ToggleAcceptingOrders (Admin, Manager, Cashier)
+func (h *Handler) ToggleAcceptingOrders(c *gin.Context) {
+	role := c.GetString("role")
+	
+	var userBranchID *int
+	if branchID, exists := c.Get("branch_id"); exists {
+		bID := int(branchID.(float64))
+		userBranchID = &bID
+	}
+	
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		response.Error(c, 400, "invalid branch id")
+		return
+	}
+	
+	var req UpdateAcceptingOrdersRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, 400, "invalid payload: "+err.Error())
+		return
+	}
+	
+	if err := h.service.ToggleAcceptingOrders(c.Request.Context(), id, req, role, userBranchID); err != nil {
+		if err.Error() == "forbidden: unauthorized role" || err.Error() == "forbidden: can only toggle accepting orders for your own branch" {
+			response.Error(c, 403, err.Error())
+			return
+		}
+		response.Error(c, 400, err.Error())
+		return
+	}
+	
+	response.Success(c, 200, "accepting orders status updated successfully")
+}

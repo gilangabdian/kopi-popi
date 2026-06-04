@@ -1,0 +1,381 @@
+package sales
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/gilangages/kopi-popi/internal/branch"
+	"github.com/gilangages/kopi-popi/internal/catalog"
+	"github.com/gilangages/kopi-popi/internal/inventory"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+type Service interface {
+	// Shifts
+	OpenShift(ctx context.Context, branchID int, cashierID string, req OpenShiftRequest) (*Shift, error)
+	CloseShift(ctx context.Context, cashierID string, req CloseShiftRequest) error
+	GetMyOpenShift(ctx context.Context, cashierID string) (*Shift, error)
+
+	// Carts (Online & Offline)
+	AddCartItem(ctx context.Context, customerID *string, branchID int, req AddCartItemRequest) error
+	InitOfflineCart(ctx context.Context, branchID int, req InitOfflineCartRequest) (*Cart, error)
+	AddItemToOfflineCart(ctx context.Context, cartID string, branchID int, req AddCartItemRequest) error
+	GetMyCart(ctx context.Context, customerID string) (*Cart, error)
+	GetOfflineCarts(ctx context.Context, branchID int) ([]Cart, error)
+	ClearCart(ctx context.Context, cartID string) error
+
+	// Checkout
+	Checkout(ctx context.Context, customerID *string, cashierID *string, req CheckoutRequest) (*Transaction, error)
+
+	// Transactions
+	GetTransactionByID(ctx context.Context, id string) (*Transaction, error)
+	GetMyTransactions(ctx context.Context, customerID string) ([]Transaction, error)
+	GetBranchTransactions(ctx context.Context, branchID int) ([]Transaction, error)
+}
+
+type service struct {
+	repo       Repository
+	branchSvc  branch.Service
+	catalogSvc catalog.Service
+	invSvc     inventory.Service
+}
+
+func NewService(repo Repository, branchSvc branch.Service, catalogSvc catalog.Service, invSvc inventory.Service) Service {
+	return &service{
+		repo:       repo,
+		branchSvc:  branchSvc,
+		catalogSvc: catalogSvc,
+		invSvc:     invSvc,
+	}
+}
+
+// --- SHIFTS ---
+
+func (s *service) OpenShift(ctx context.Context, branchID int, cashierID string, req OpenShiftRequest) (*Shift, error) {
+	// Check if already open
+	existing, err := s.repo.GetOpenShiftByCashier(cashierID)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, errors.New("conflict: you already have an open shift")
+	}
+
+	shift := &Shift{
+		ID:           uuid.NewString(),
+		BranchID:     branchID,
+		CashierID:    cashierID,
+		StartTime:    time.Now(),
+		StartingCash: req.StartingCash,
+		ExpectedCash: req.StartingCash,
+		Status:       "Open",
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := s.repo.CreateShift(shift); err != nil {
+		return nil, err
+	}
+	return shift, nil
+}
+
+func (s *service) CloseShift(ctx context.Context, cashierID string, req CloseShiftRequest) error {
+	shift, err := s.repo.GetOpenShiftByCashier(cashierID)
+	if err != nil {
+		return err
+	}
+	if shift == nil {
+		return errors.New("not found: no open shift found")
+	}
+
+	now := time.Now()
+	shift.EndTime = &now
+	shift.ActualCash = &req.ActualCash
+	shift.Status = "Closed" // Wait for manager to verify
+	shift.UpdatedAt = time.Now()
+
+	return s.repo.UpdateShift(shift)
+}
+
+func (s *service) GetMyOpenShift(ctx context.Context, cashierID string) (*Shift, error) {
+	return s.repo.GetOpenShiftByCashier(cashierID)
+}
+
+// --- CARTS ---
+
+func (s *service) AddCartItem(ctx context.Context, customerID *string, branchID int, req AddCartItemRequest) error {
+	// 1. Cek apakah cabang menerima order
+	branches, err := s.branchSvc.GetAllBranches(ctx, "Customer", true)
+	if err != nil {
+		return err
+	}
+	var targetBranch *branch.Branch
+	for _, b := range branches {
+		if b.ID == branchID {
+			targetBranch = &b
+			break
+		}
+	}
+	if targetBranch == nil {
+		return errors.New("branch not found")
+	}
+	if !targetBranch.IsAcceptingOrders || !targetBranch.IsActive {
+		return errors.New("forbidden: branch is currently not accepting orders")
+	}
+	
+	// Validasi Jam Operasional jika perlu (disini asumsinya ditangani)
+	// if targetBranch.OpeningTime != nil && targetBranch.ClosingTime != nil {
+	//   // Cek jam saat ini
+	// }
+
+	var cart *Cart
+
+	if customerID != nil {
+		// Scenario 1: Online Customer Cart
+		cart, err = s.repo.GetActiveCartByCustomer(*customerID)
+		if err != nil {
+			return err
+		}
+		if cart == nil {
+			// Bikin baru
+			cart = &Cart{
+				ID:         uuid.NewString(),
+				CustomerID: customerID,
+				BranchID:   branchID,
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
+			}
+			if err := s.repo.CreateCart(cart); err != nil {
+				return err
+			}
+		} else {
+			// Pastikan branch nya sama, kalau beda, clear dulu
+			if cart.BranchID != branchID {
+				if err := s.repo.ClearCartItems(cart.ID); err != nil {
+					return err
+				}
+				cart.BranchID = branchID
+				cart.UpdatedAt = time.Now()
+				// update cart branch? The repository doesn't have an update cart, so let's just clear for now or delete and recreate.
+				s.repo.DeleteCart(cart.ID)
+				cart = &Cart{
+					ID:         uuid.NewString(),
+					CustomerID: customerID,
+					BranchID:   branchID,
+					CreatedAt:  time.Now(),
+					UpdatedAt:  time.Now(),
+				}
+				s.repo.CreateCart(cart)
+			}
+		}
+	} else {
+		// Kasir gak bisa pakai endpoint ini tanpa InitOfflineCart dulu
+		return errors.New("unauthorized: offline cart requires cart initialization")
+	}
+
+	item := &CartItem{
+		CartID:    cart.ID,
+		ProductID: req.ProductID,
+		Quantity:  req.Quantity,
+		Notes:     req.Notes,
+	}
+
+	return s.repo.AddOrUpdateCartItem(item)
+}
+
+func (s *service) InitOfflineCart(ctx context.Context, branchID int, req InitOfflineCartRequest) (*Cart, error) {
+	cart := &Cart{
+		ID:        uuid.NewString(),
+		CartName:  &req.CartName,
+		BranchID:  branchID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := s.repo.CreateCart(cart); err != nil {
+		return nil, err
+	}
+	return cart, nil
+}
+
+func (s *service) AddItemToOfflineCart(ctx context.Context, cartID string, branchID int, req AddCartItemRequest) error {
+	cart, err := s.repo.GetCartByID(cartID)
+	if err != nil {
+		return err
+	}
+	if cart == nil {
+		return errors.New("not found: cart not found")
+	}
+	if cart.BranchID != branchID {
+		return errors.New("forbidden: cart does not belong to your branch")
+	}
+	if cart.CustomerID != nil {
+		return errors.New("invalid: this cart belongs to a customer, not an offline hold bill")
+	}
+
+	item := &CartItem{
+		CartID:    cart.ID,
+		ProductID: req.ProductID,
+		Quantity:  req.Quantity,
+		Notes:     req.Notes,
+	}
+	return s.repo.AddOrUpdateCartItem(item)
+}
+
+func (s *service) GetMyCart(ctx context.Context, customerID string) (*Cart, error) {
+	return s.repo.GetActiveCartByCustomer(customerID)
+}
+
+func (s *service) GetOfflineCarts(ctx context.Context, branchID int) ([]Cart, error) {
+	return s.repo.GetActiveCartsByBranch(branchID)
+}
+
+func (s *service) ClearCart(ctx context.Context, cartID string) error {
+	return s.repo.ClearCartItems(cartID)
+}
+
+// --- CHECKOUT ---
+
+func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *string, req CheckoutRequest) (*Transaction, error) {
+	cart, err := s.repo.GetCartByID(req.CartID)
+	if err != nil {
+		return nil, err
+	}
+	if cart == nil {
+		return nil, errors.New("not found: cart not found")
+	}
+
+	// Otorisasi: kalau customerID ada, harus match dengan cart.customerID
+	if customerID != nil {
+		if cart.CustomerID == nil || *cart.CustomerID != *customerID {
+			return nil, errors.New("forbidden: not your cart")
+		}
+	}
+
+	if len(cart.Items) == 0 {
+		return nil, errors.New("invalid: cart is empty")
+	}
+
+	var shiftID *string
+	if cashierID != nil {
+		// Kasir checkout
+		shift, err := s.repo.GetOpenShiftByCashier(*cashierID)
+		if err != nil {
+			return nil, err
+		}
+		if shift == nil {
+			return nil, errors.New("invalid: you must open a shift before checking out")
+		}
+		shiftID = &shift.ID
+	}
+
+	// 1. Hitung Subtotal & Kumpulkan Produk
+	var totalAmount float64
+	var details []TransactionDetail
+	var productIDs []int
+
+	for _, item := range cart.Items {
+		productIDs = append(productIDs, item.ProductID)
+	}
+
+	boms, err := s.catalogSvc.GetProductsBOM(ctx, productIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range cart.Items {
+		if item.Product == nil {
+			return nil, errors.New("invalid: product not found in cart item")
+		}
+		subtotal := float64(item.Quantity) * item.Product.Price
+		totalAmount += subtotal
+		details = append(details, TransactionDetail{
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+			Subtotal:  subtotal,
+			Notes:     item.Notes,
+		})
+	}
+
+	// Validasi Amount Tendered (Jika Cash)
+	if req.PaymentMethod == "CASH" {
+		if req.AmountTendered == nil || *req.AmountTendered < totalAmount {
+			return nil, errors.New("invalid: amount tendered is less than total amount")
+		}
+	}
+
+	transaction := &Transaction{
+		ID:            uuid.NewString(),
+		BranchID:      cart.BranchID,
+		CustomerID:    customerID,
+		CashierID:     cashierID,
+		ShiftID:       shiftID,
+		OrderType:     req.OrderType,
+		PaymentMethod: req.PaymentMethod,
+		TotalAmount:   totalAmount,
+		Status:        "Paid", // Asumsi Instan Paid (Cash/QRIS Dummy). Integrasi asli butuh Waiting_Payment
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		Details:       details,
+	}
+
+	// 2. Jalankan DB Transaction: Create Transaksi, Kurangi Stok, Update Shift (Jika ada), Hapus Cart
+	err = s.repo.WithTransaction(func(tx *gorm.DB) error {
+		// a. Create Transaction
+		if err := s.repo.CreateTransaction(tx, transaction); err != nil {
+			return err
+		}
+
+		// b. Potong Stok (BOM)
+		for _, item := range cart.Items {
+			recipe := boms[item.ProductID]
+			for _, r := range recipe {
+				qtyToDeduct := r.QuantityNeeded * float64(item.Quantity)
+				desc := "Sales Transaction: " + transaction.ID
+				if err := s.invSvc.DeductStock(tx, cart.BranchID, r.MaterialID, qtyToDeduct, desc); err != nil {
+					return err
+				}
+			}
+		}
+
+		// c. Tambah Expected Cash di Shift Kasir
+		if shiftID != nil && req.PaymentMethod == "CASH" {
+			var shift Shift
+			if err := tx.First(&shift, "id = ?", *shiftID).Error; err != nil {
+				return err
+			}
+			shift.ExpectedCash += totalAmount
+			if err := tx.Save(&shift).Error; err != nil {
+				return err
+			}
+		}
+
+		// d. Hapus Cart
+		if err := tx.Where("cart_id = ?", cart.ID).Delete(&CartItem{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&Cart{}, "id = ?", cart.ID).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
+}
+
+func (s *service) GetTransactionByID(ctx context.Context, id string) (*Transaction, error) {
+	return s.repo.GetTransactionByID(id)
+}
+
+func (s *service) GetMyTransactions(ctx context.Context, customerID string) ([]Transaction, error) {
+	return s.repo.GetTransactionsByCustomer(customerID)
+}
+
+func (s *service) GetBranchTransactions(ctx context.Context, branchID int) ([]Transaction, error) {
+	return s.repo.GetTransactionsByBranch(branchID)
+}

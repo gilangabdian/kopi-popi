@@ -81,5 +81,45 @@
         "200": { "$ref": "../responses/common.json#/GenericSuccess" }
       }
     }
+  },
+  "operating-hours": {
+    "patch": {
+      "summary": "Update Operating Hours (Admin Only)",
+      "tags": ["Branches"],
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "../schemas/common.json#/UpdateOperatingHoursRequest" }
+          }
+        }
+      },
+      "responses": {
+        "200": { "$ref": "../responses/common.json#/GenericSuccess" }
+      }
+    }
+  },
+  "accepting-orders": {
+    "patch": {
+      "summary": "Toggle Accepting Orders / Emergency Open Close (Admin, Manager, Cashier)",
+      "tags": ["Branches"],
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "../schemas/common.json#/UpdateAcceptingOrdersRequest" }
+          }
+        }
+      },
+      "responses": {
+        "200": { "$ref": "../responses/common.json#/GenericSuccess" }
+      }
+    }
   }
 }

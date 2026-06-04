@@ -7,6 +7,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/catalog"
 	"github.com/gilangages/kopi-popi/internal/inventory"
 	"github.com/gilangages/kopi-popi/internal/media"
+	"github.com/gilangages/kopi-popi/internal/sales"
 	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/gilangages/kopi-popi/pkg/middleware"
 	"github.com/gilangages/kopi-popi/pkg/response"
@@ -74,6 +75,11 @@ func main() {
 	inventoryService := inventory.NewService(inventoryRepo)
 	inventoryHandler := inventory.NewHandler(inventoryService)
 
+	// 5g. Inisialisasi Domain Sales
+	salesRepo := sales.NewRepository(db)
+	salesService := sales.NewService(salesRepo, branchesService, catalogService, inventoryService)
+	salesHandler := sales.NewHandler(salesService)
+
 	// 6. Daftarkan router per-domain (Public)
 	authRoutes := r.Group("/auth")
 	{
@@ -108,10 +114,12 @@ func main() {
 		protectedRoutes.POST("/users/cashiers", usersHandler.CreateCashier)
 		protectedRoutes.PATCH("/users/:id/disable", usersHandler.DisableEmployee)
 
-		// Branches Management (ADMIN)
+		// Branches Management (ADMIN & MANAGER/CASHIER)
 		protectedRoutes.POST("/branches", branchesHandler.CreateBranch)
 		protectedRoutes.PUT("/branches/:id", branchesHandler.UpdateBranch)
 		protectedRoutes.DELETE("/branches/:id", branchesHandler.DeleteBranch)
+		protectedRoutes.PATCH("/branches/:id/operating-hours", branchesHandler.UpdateOperatingHours)
+		protectedRoutes.PATCH("/branches/:id/accepting-orders", branchesHandler.ToggleAcceptingOrders)
 
 		// Catalogues Management (ADMIN & MANAGER)
 		protectedRoutes.POST("/categories", catalogHandler.CreateCategory)
@@ -133,6 +141,18 @@ func main() {
 		protectedRoutes.GET("/inventories/restocks", inventoryHandler.GetRestockRequests)
 		protectedRoutes.POST("/inventories/restocks", inventoryHandler.CreateRestockRequest)
 		protectedRoutes.PATCH("/inventories/restocks/:id/status", inventoryHandler.UpdateRestockStatus)
+
+		// Sales & POS Management
+		protectedRoutes.POST("/shifts/open", salesHandler.OpenShift)
+		protectedRoutes.POST("/shifts/close", salesHandler.CloseShift)
+		protectedRoutes.GET("/shifts/me", salesHandler.GetMyOpenShift)
+
+		protectedRoutes.POST("/carts/offline", salesHandler.InitOfflineCart)
+		protectedRoutes.POST("/carts/items", salesHandler.AddCartItem)
+		protectedRoutes.POST("/carts/:id/items", salesHandler.AddItemToOfflineCart)
+		protectedRoutes.GET("/carts/me", salesHandler.GetMyCart)
+
+		protectedRoutes.POST("/checkout", salesHandler.Checkout)
 	}
 
 	// 8. Daftarkan router dengan Optional Auth (untuk public route yang behavior-nya berubah jika login)

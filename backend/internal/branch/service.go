@@ -11,6 +11,8 @@ type Service interface {
 	CreateBranch(ctx context.Context, req CreateBranchRequest) error
 	UpdateBranch(ctx context.Context, id int, req UpdateBranchRequest) error
 	DeleteBranch(ctx context.Context, id int) error
+	UpdateOperatingHours(ctx context.Context, id int, req UpdateOperatingHoursRequest, role string) error
+	ToggleAcceptingOrders(ctx context.Context, id int, req UpdateAcceptingOrdersRequest, role string, branchID *int) error
 }
 
 type service struct {
@@ -41,11 +43,12 @@ func (s *service) GetAllBranches(ctx context.Context, role string, includeInacti
 
 func (s *service) CreateBranch(ctx context.Context, req CreateBranchRequest) error {
 	branch := &Branch{
-		Name:      req.Name,
-		Address:   req.Address,
-		IsActive:  true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Name:              req.Name,
+		Address:           req.Address,
+		IsActive:          true,
+		IsAcceptingOrders: true,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 	
 	return s.repo.Create(ctx, branch)
@@ -88,5 +91,51 @@ func (s *service) DeleteBranch(ctx context.Context, id int) error {
 	branch.IsActive = false
 	branch.UpdatedAt = time.Now()
 	
+	return s.repo.Update(ctx, branch)
+}
+
+func (s *service) UpdateOperatingHours(ctx context.Context, id int, req UpdateOperatingHoursRequest, role string) error {
+	if role != "Admin" {
+		return errors.New("forbidden: only admin can update operating hours")
+	}
+
+	branch, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if branch == nil {
+		return errors.New("branch not found")
+	}
+
+	branch.OpeningTime = req.OpeningTime
+	branch.ClosingTime = req.ClosingTime
+	branch.UpdatedAt = time.Now()
+
+	return s.repo.Update(ctx, branch)
+}
+
+func (s *service) ToggleAcceptingOrders(ctx context.Context, id int, req UpdateAcceptingOrdersRequest, role string, userBranchID *int) error {
+	if role != "Admin" && role != "Manager" && role != "Cashier" {
+		return errors.New("forbidden: unauthorized role")
+	}
+
+	// Manager and Cashier can only toggle their own branch
+	if role != "Admin" {
+		if userBranchID == nil || *userBranchID != id {
+			return errors.New("forbidden: can only toggle accepting orders for your own branch")
+		}
+	}
+
+	branch, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if branch == nil {
+		return errors.New("branch not found")
+	}
+
+	branch.IsAcceptingOrders = *req.IsAcceptingOrders
+	branch.UpdatedAt = time.Now()
+
 	return s.repo.Update(ctx, branch)
 }
