@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gilangages/kopi-popi/internal/notification"
 	"github.com/gilangages/kopi-popi/pkg/hash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -52,6 +53,55 @@ func (m *mockRepository) DeletePasswordReset(ctx context.Context, email string) 
 	return args.Error(0)
 }
 
+func (m *mockRepository) CreateEmailVerification(ctx context.Context, ev *EmailVerification) error {
+	args := m.Called(ctx, ev)
+	return args.Error(0)
+}
+
+func (m *mockRepository) GetEmailVerification(ctx context.Context, email string) (*EmailVerification, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) != nil {
+		return args.Get(0).(*EmailVerification), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *mockRepository) DeleteEmailVerification(ctx context.Context, email string) error {
+	args := m.Called(ctx, email)
+	return args.Error(0)
+}
+
+func (m *mockRepository) VerifyUserEmail(ctx context.Context, email string) error {
+	args := m.Called(ctx, email)
+	return args.Error(0)
+}
+
+// --- MOCK NOTIFICATION SERVICE ---
+type mockNotificationService struct {
+	mock.Mock
+}
+
+func (m *mockNotificationService) SendRegistrationOTPEmail(email string, userName string, otpCode string) {
+	m.Called(email, userName, otpCode)
+}
+func (m *mockNotificationService) SendOTPResetEmail(email string, userName string, otpCode string) {
+	m.Called(email, userName, otpCode)
+}
+func (m *mockNotificationService) GetMyNotifications(ctx context.Context, userID string) ([]notification.Notification, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]notification.Notification), args.Error(1)
+}
+func (m *mockNotificationService) MarkAsRead(ctx context.Context, userID string, id string) error {
+	args := m.Called(ctx, userID, id)
+	return args.Error(0)
+}
+func (m *mockNotificationService) SendInvoiceEmail(customerEmail string, customerName string, transactionID string, amount float64) {}
+func (m *mockNotificationService) SendOrderReadyEmail(customerEmail string, customerName string, transactionID string) {}
+func (m *mockNotificationService) SendRestockRequestEmail(adminEmail string, branchName string, reqID string) {}
+func (m *mockNotificationService) SendRestockResultEmail(managerEmail string, branchName string, status string, notes string) {}
+func (m *mockNotificationService) CreateInAppNotification(ctx context.Context, userID string, title string, message string, entityType string, entityID string) error { return nil }
+func (m *mockNotificationService) SendInAppNotification(roleName string, title string, message string, wsMessage string) error { return nil }
+
 // Inisialisasi env sebelum testing
 func init() {
 	os.Setenv("JWT_SECRET", "secret_untuk_testing")
@@ -61,7 +111,8 @@ func init() {
 
 func TestRegister_Success(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	mockNotif := new(mockNotificationService)
+	service := NewService(mockRepo, mockNotif)
 
 	req := RegisterRequest{
 		Name:            "Gilang",
@@ -75,6 +126,11 @@ func TestRegister_Success(t *testing.T) {
 	mockRepo.On("FindByEmail", mock.Anything, req.Email).Return(nil, nil)
 	// Skenario: CreateUser mengembalikan sukses (nil)
 	mockRepo.On("CreateUser", mock.Anything, mock.AnythingOfType("*auth.User")).Return(nil)
+	
+	// Skenario: Delete dan Create EmailVerification mengembalikan sukses (nil)
+	mockRepo.On("DeleteEmailVerification", mock.Anything, req.Email).Return(nil)
+	mockRepo.On("CreateEmailVerification", mock.Anything, mock.AnythingOfType("*auth.EmailVerification")).Return(nil)
+	mockNotif.On("SendRegistrationOTPEmail", req.Email, req.Name, mock.Anything).Return()
 
 	user, err := service.Register(context.Background(), req)
 
@@ -87,7 +143,7 @@ func TestRegister_Success(t *testing.T) {
 
 func TestRegister_EmailAlreadyExists(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	service := NewService(mockRepo, nil)
 
 	req := RegisterRequest{
 		Name:     "Gilang",
@@ -108,7 +164,7 @@ func TestRegister_EmailAlreadyExists(t *testing.T) {
 
 func TestLogin_Success(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	service := NewService(mockRepo, nil)
 
 	password := "rahasia123"
 	hashedPassword, _ := hash.MakeHash(password)
@@ -118,6 +174,7 @@ func TestLogin_Success(t *testing.T) {
 		Name:         "Gilang",
 		Email:        "gilang@example.com",
 		PasswordHash: hashedPassword,
+		IsVerified:   true,
 		RoleID:       4, // Customer
 	}
 
@@ -139,7 +196,7 @@ func TestLogin_Success(t *testing.T) {
 
 func TestLogin_Admin_Success(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	service := NewService(mockRepo, nil)
 
 	password := "admin123"
 	hashedPassword, _ := hash.MakeHash(password)
@@ -149,6 +206,7 @@ func TestLogin_Admin_Success(t *testing.T) {
 		Name:         "Super Admin",
 		Email:        "admin@kopipopi.com",
 		PasswordHash: hashedPassword,
+		IsVerified:   true,
 		RoleID:       1, // 1 = Admin
 	}
 
@@ -170,7 +228,7 @@ func TestLogin_Admin_Success(t *testing.T) {
 
 func TestLogin_InvalidEmailOrPassword(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	service := NewService(mockRepo, nil)
 
 	// Skenario 1: Email tidak ada
 	mockRepo.On("FindByEmail", mock.Anything, "salah@example.com").Return(nil, nil).Once()
@@ -182,7 +240,7 @@ func TestLogin_InvalidEmailOrPassword(t *testing.T) {
 	// Skenario 2: Password salah
 	password := "rahasia123"
 	hashedPassword, _ := hash.MakeHash(password)
-	user := &User{Email: "gilang@example.com", PasswordHash: hashedPassword}
+	user := &User{Email: "gilang@example.com", PasswordHash: hashedPassword, IsVerified: true}
 
 	mockRepo.On("FindByEmail", mock.Anything, "gilang@example.com").Return(user, nil).Once()
 
@@ -195,7 +253,8 @@ func TestLogin_InvalidEmailOrPassword(t *testing.T) {
 
 func TestForgotPassword_Success(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	mockNotif := new(mockNotificationService)
+	service := NewService(mockRepo, mockNotif)
 
 	req := ForgotPasswordRequest{Email: "gilang@example.com"}
 	user := &User{Email: "gilang@example.com"}
@@ -203,6 +262,7 @@ func TestForgotPassword_Success(t *testing.T) {
 	mockRepo.On("FindByEmail", mock.Anything, req.Email).Return(user, nil)
 	mockRepo.On("DeletePasswordReset", mock.Anything, req.Email).Return(nil)
 	mockRepo.On("CreatePasswordReset", mock.Anything, mock.AnythingOfType("*auth.PasswordReset")).Return(nil)
+	mockNotif.On("SendOTPResetEmail", user.Email, user.Name, mock.Anything).Return()
 
 	err := service.ForgotPassword(context.Background(), req)
 
@@ -212,7 +272,7 @@ func TestForgotPassword_Success(t *testing.T) {
 
 func TestResetPassword_Success(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	service := NewService(mockRepo, nil)
 
 	req := ResetPasswordRequest{
 		Token:           "valid-token",
@@ -238,7 +298,7 @@ func TestResetPassword_Success(t *testing.T) {
 
 func TestResetPassword_ExpiredToken(t *testing.T) {
 	mockRepo := new(mockRepository)
-	service := NewService(mockRepo)
+	service := NewService(mockRepo, nil)
 
 	req := ResetPasswordRequest{Token: "expired-token", NewPassword: "123", ConfirmPassword: "123"}
 

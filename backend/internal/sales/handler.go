@@ -1,18 +1,21 @@
 package sales
 
 import (
+	"fmt"
 	"strconv"
 
+	"github.com/gilangages/kopi-popi/internal/payment"
 	"github.com/gilangages/kopi-popi/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	service Service
+	service    Service
+	paymentSvc payment.Service
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service}
+func NewHandler(service Service, paymentSvc payment.Service) *Handler {
+	return &Handler{service, paymentSvc}
 }
 
 // --- SHIFTS ---
@@ -248,5 +251,30 @@ func (h *Handler) Checkout(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, 200, trx)
+	// Jika Online, Generate Midtrans URL
+	var paymentURL string
+	if req.OrderType == "Online_Pickup" || req.OrderType == "Online_Delivery" {
+		if h.paymentSvc != nil {
+			var custName, custEmail string
+			if trx.CustomerName != nil {
+				custName = *trx.CustomerName
+			} else {
+				custName = "Guest"
+			}
+			custEmail = "guest@example.com" // asumsikan default, atau fetch profile
+
+			url, err := h.paymentSvc.CreateSnapURL(trx.ID, trx.TotalAmount, custName, custEmail)
+			if err == nil {
+				paymentURL = url
+			} else {
+				// Cetak error ke terminal agar mudah di-debug
+				fmt.Println("[ERROR] Failed to create Midtrans Snap URL:", err)
+			}
+		}
+	}
+
+	response.Success(c, 200, gin.H{
+		"transaction": trx,
+		"payment_url": paymentURL,
+	})
 }

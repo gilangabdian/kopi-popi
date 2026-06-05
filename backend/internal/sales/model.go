@@ -46,6 +46,7 @@ type Transaction struct {
 	ID            string              `json:"id" gorm:"primaryKey"`
 	BranchID      int                 `json:"branch_id"`
 	CustomerID    *string             `json:"customer_id,omitempty"`
+	CustomerName  *string             `json:"customer_name,omitempty"`
 	CashierID     *string             `json:"cashier_id,omitempty"`
 	ShiftID       *string             `json:"shift_id,omitempty"`
 	OrderType     string              `json:"order_type"` // Online_Pickup, Offline_DineIn, Offline_Takeaway
@@ -92,5 +93,6 @@ type CheckoutRequest struct {
 	CartID        string  `json:"cart_id" binding:"required"`
 	OrderType     string  `json:"order_type" binding:"required"` // Online_Pickup, Offline_DineIn, Offline_Takeaway
 	PaymentMethod string  `json:"payment_method" binding:"required"` // CASH, QRIS, dll
+	CustomerName  *string `json:"customer_name,omitempty"` // Wajib diisi kasir (offline)
 	AmountTendered *float64 `json:"amount_tendered,omitempty"` // Khusus Cash, uang yang diberikan pelanggan (untuk kembalian - opsional)
 }

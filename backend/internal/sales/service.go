@@ -8,6 +8,8 @@ import (
 	"github.com/gilangages/kopi-popi/internal/branch"
 	"github.com/gilangages/kopi-popi/internal/catalog"
 	"github.com/gilangages/kopi-popi/internal/inventory"
+	"github.com/gilangages/kopi-popi/internal/notification"
+	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -40,14 +42,18 @@ type service struct {
 	branchSvc  branch.Service
 	catalogSvc catalog.Service
 	invSvc     inventory.Service
+	notifSvc   notification.Service
+	userSvc    user.Service
 }
 
-func NewService(repo Repository, branchSvc branch.Service, catalogSvc catalog.Service, invSvc inventory.Service) Service {
+func NewService(repo Repository, branchSvc branch.Service, catalogSvc catalog.Service, invSvc inventory.Service, notifSvc notification.Service, userSvc user.Service) Service {
 	return &service{
 		repo:       repo,
 		branchSvc:  branchSvc,
 		catalogSvc: catalogSvc,
 		invSvc:     invSvc,
+		notifSvc:   notifSvc,
+		userSvc:    userSvc,
 	}
 }
 
@@ -95,7 +101,24 @@ func (s *service) CloseShift(ctx context.Context, cashierID string, req CloseShi
 	shift.Status = "Closed" // Wait for manager to verify
 	shift.UpdatedAt = time.Now()
 
-	return s.repo.UpdateShift(shift)
+	err = s.repo.UpdateShift(shift)
+	if err != nil {
+		return err
+	}
+
+	// Notifikasi In-App ke Manager
+	if s.notifSvc != nil && s.userSvc != nil {
+		allUsers, err := s.userSvc.GetEmployees(ctx, "Admin", nil)
+		if err == nil {
+			for _, u := range allUsers {
+				if u.BranchID != nil && *u.BranchID == shift.BranchID && u.RoleID == 2 { // Manager
+					s.notifSvc.SendInAppNotification(u.ID, "Shift Ditutup", "Kasir baru saja menutup shift, harap verifikasi kas.", "INFO")
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *service) GetMyOpenShift(ctx context.Context, cashierID string) (*Shift, error) {
@@ -304,49 +327,58 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 		}
 	}
 
+	status := "Paid"
+	if req.OrderType == "Online_Pickup" || req.OrderType == "Online_Delivery" {
+		status = "Waiting_Payment"
+	}
+
 	transaction := &Transaction{
 		ID:            uuid.NewString(),
 		BranchID:      cart.BranchID,
 		CustomerID:    customerID,
+		CustomerName:  req.CustomerName,
 		CashierID:     cashierID,
 		ShiftID:       shiftID,
 		OrderType:     req.OrderType,
 		PaymentMethod: req.PaymentMethod,
 		TotalAmount:   totalAmount,
-		Status:        "Paid", // Asumsi Instan Paid (Cash/QRIS Dummy). Integrasi asli butuh Waiting_Payment
+		Status:        status,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		Details:       details,
 	}
 
-	// 2. Jalankan DB Transaction: Create Transaksi, Kurangi Stok, Update Shift (Jika ada), Hapus Cart
+	// 2. Jalankan DB Transaction: Create Transaksi, Hapus Cart,
+	// Jika Offline -> Kurangi Stok, Update Shift (Jika ada)
 	err = s.repo.WithTransaction(func(tx *gorm.DB) error {
 		// a. Create Transaction
 		if err := s.repo.CreateTransaction(tx, transaction); err != nil {
 			return err
 		}
 
-		// b. Potong Stok (BOM)
-		for _, item := range cart.Items {
-			recipe := boms[item.ProductID]
-			for _, r := range recipe {
-				qtyToDeduct := r.QuantityNeeded * float64(item.Quantity)
-				desc := "Sales Transaction: " + transaction.ID
-				if err := s.invSvc.DeductStock(tx, cart.BranchID, r.MaterialID, qtyToDeduct, desc); err != nil {
-					return err
+		if status == "Paid" {
+			// b. Potong Stok (BOM) hanya jika langsung lunas (Offline)
+			for _, item := range cart.Items {
+				recipe := boms[item.ProductID]
+				for _, r := range recipe {
+					qtyToDeduct := r.QuantityNeeded * float64(item.Quantity)
+					desc := "Sales Transaction: " + transaction.ID
+					if err := s.invSvc.DeductStock(tx, cart.BranchID, r.MaterialID, qtyToDeduct, desc); err != nil {
+						return err
+					}
 				}
 			}
-		}
 
-		// c. Tambah Expected Cash di Shift Kasir
-		if shiftID != nil && req.PaymentMethod == "CASH" {
-			var shift Shift
-			if err := tx.First(&shift, "id = ?", *shiftID).Error; err != nil {
-				return err
-			}
-			shift.ExpectedCash += totalAmount
-			if err := tx.Save(&shift).Error; err != nil {
-				return err
+			// c. Tambah Expected Cash di Shift Kasir
+			if shiftID != nil && req.PaymentMethod == "CASH" {
+				var shift Shift
+				if err := tx.First(&shift, "id = ?", *shiftID).Error; err != nil {
+					return err
+				}
+				shift.ExpectedCash += totalAmount
+				if err := tx.Save(&shift).Error; err != nil {
+					return err
+				}
 			}
 		}
 
@@ -363,6 +395,23 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 
 	if err != nil {
 		return nil, err
+	}
+
+	// 3. Notifikasi
+	// Online Payment invoice will be sent by Webhook, NOT here.
+	// We only send notification here for Offline transactions (maybe E-Receipt if they provide email later)
+	// But according to user: "beli offline atau bawa pulang maka bisa bayar cash atau lewat qris gitu... nota fisik". No email for offline.
+	// So we don't send invoice email here anymore! It's fully handled by webhook for online.
+
+	// Kasir di-notify saat transaksi lunas (Offline langsung masuk antrian, Online nunggu webhook)
+	if s.notifSvc != nil {
+		if status == "Paid" {
+			// Kasir yg melayani gak butuh notif in-app karena dia yg input.
+			// Tapi barista mungkin butuh? Sementara lewati saja.
+		} else {
+			// Online nunggu lunas, jadi ngga di-notify pas "Waiting_Payment"
+			// Webhook yg akan trigger notif "Pesanan Lunas" ke kasir.
+		}
 	}
 
 	return transaction, nil

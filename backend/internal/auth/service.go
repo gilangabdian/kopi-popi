@@ -3,9 +3,10 @@ package auth
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"time"
 
+	"github.com/gilangages/kopi-popi/internal/notification"
 	"github.com/gilangages/kopi-popi/pkg/hash"
 	"github.com/gilangages/kopi-popi/pkg/jwt"
 	"github.com/google/uuid"
@@ -13,17 +14,19 @@ import (
 
 type Service interface {
 	Register(ctx context.Context, req RegisterRequest) (*User, error)
+	VerifyEmail(ctx context.Context, req VerifyEmailRequest) error
 	Login(ctx context.Context, req LoginRequest) (string, *User, error)
 	ForgotPassword(ctx context.Context, req ForgotPasswordRequest) error
 	ResetPassword(ctx context.Context, req ResetPasswordRequest) error
 }
 
 type authService struct {
-	repo Repository
+	repo         Repository
+	notifService notification.Service
 }
 
-func NewService(repo Repository) Service {
-	return &authService{repo}
+func NewService(repo Repository, notif notification.Service) Service {
+	return &authService{repo: repo, notifService: notif}
 }
 
 func (s *authService) Register(ctx context.Context, req RegisterRequest) (*User, error) {
@@ -65,7 +68,58 @@ func (s *authService) Register(ctx context.Context, req RegisterRequest) (*User,
 		return nil, err
 	}
 
+	// 6. Generate OTP (6 digit)
+	otpStr := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+
+	ev := &EmailVerification{
+		Email:     user.Email,
+		OTPCode:   otpStr,
+		ExpiresAt: time.Now().Add(5 * time.Minute),
+	}
+	_ = s.repo.DeleteEmailVerification(ctx, user.Email) // Clean up old
+	err = s.repo.CreateEmailVerification(ctx, ev)
+	if err != nil {
+		return nil, err
+	}
+
+	// 7. Kirim Registration OTP Email (Async)
+	if s.notifService != nil {
+		s.notifService.SendRegistrationOTPEmail(user.Email, user.Name, otpStr)
+	}
+
 	return user, nil
+}
+
+func (s *authService) VerifyEmail(ctx context.Context, req VerifyEmailRequest) error {
+	// 1. Dapatkan OTP dari database
+	ev, err := s.repo.GetEmailVerification(ctx, req.Email)
+	if err != nil {
+		return err
+	}
+	if ev == nil {
+		return errors.New("tidak ada permintaan verifikasi untuk email ini")
+	}
+
+	// 2. Cek kecocokan
+	if ev.OTPCode != req.OTPCode {
+		return errors.New("kode OTP salah")
+	}
+
+	// 3. Cek expired
+	if time.Now().After(ev.ExpiresAt) {
+		return errors.New("kode OTP telah kedaluwarsa")
+	}
+
+	// 4. Update user
+	err = s.repo.VerifyUserEmail(ctx, req.Email)
+	if err != nil {
+		return err
+	}
+
+	// 5. Hapus data verifikasi
+	_ = s.repo.DeleteEmailVerification(ctx, req.Email)
+
+	return nil
 }
 
 func (s *authService) Login(ctx context.Context, req LoginRequest) (string, *User, error) {
@@ -82,6 +136,11 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (string, *Use
 	isValid := hash.CheckHash(req.Password, user.PasswordHash)
 	if !isValid {
 		return "", nil, errors.New("invalid email or password")
+	}
+
+	// 2.5 Cek status verifikasi email
+	if !user.IsVerified {
+		return "", nil, errors.New("Mohon verifikasi email Anda terlebih dahulu")
 	}
 
 	// 3. Generate JWT
@@ -133,12 +192,10 @@ func (s *authService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 		return err
 	}
 
-	// 4. Simulasi pengiriman email
-	// Di sistem nyata, panggil fungsi pengirim email (misal via SMTP / SendGrid)
-	log.Printf("\n======================================================\n")
-	log.Printf("MENGIRIM EMAIL KE: %s\n", req.Email)
-	log.Printf("LINK RESET PASSWORD: http://localhost:3000/reset-password?token=%s\n", resetToken)
-	log.Printf("======================================================\n\n")
+	// 4. Kirim email reset password
+	if s.notifService != nil {
+		s.notifService.SendOTPResetEmail(user.Email, user.Name, resetToken)
+	}
 	
 	return nil
 }

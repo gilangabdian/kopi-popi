@@ -31,8 +31,18 @@ type User struct {
 	Phone          *string   `json:"phone,omitempty"`
 	ProfilePicture string    `json:"profile_picture"`
 	IsActive       bool      `json:"is_active"`
+	IsVerified     bool      `json:"is_verified"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// EmailVerification merepresentasikan tabel email_verifications di database
+type EmailVerification struct {
+	ID        int       `json:"id" gorm:"primaryKey"`
+	Email     string    `json:"email"`
+	OTPCode   string    `json:"otp_code"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // RegisterRequest adalah DTO untuk menerima input dari client saat register
@@ -49,6 +59,11 @@ type LoginRequest struct {
 	Email      string `json:"email" binding:"required,email"`
 	Password   string `json:"password" binding:"required"`
 	RememberMe bool   `json:"remember_me"`
+}
+
+type VerifyEmailRequest struct {
+	Email   string `json:"email" binding:"required,email"`
+	OTPCode string `json:"otp_code" binding:"required"`
 }
 
 // PasswordReset merepresentasikan tabel password_resets di database

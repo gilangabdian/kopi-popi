@@ -7,6 +7,8 @@ import (
 	"github.com/gilangages/kopi-popi/internal/catalog"
 	"github.com/gilangages/kopi-popi/internal/inventory"
 	"github.com/gilangages/kopi-popi/internal/media"
+	"github.com/gilangages/kopi-popi/internal/notification"
+	"github.com/gilangages/kopi-popi/internal/payment"
 	"github.com/gilangages/kopi-popi/internal/sales"
 	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/gilangages/kopi-popi/pkg/middleware"
@@ -46,15 +48,20 @@ func main() {
 		})
 	})
 
-	// 5. Inisialisasi Domain Auth
-	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo)
-	authHandler := auth.NewHandler(authService)
-
-	// 5b. Inisialisasi Domain Users
+	// 5. Inisialisasi Domain Users
 	usersRepo := user.NewRepository(db)
 	usersService := user.NewService(usersRepo)
 	usersHandler := user.NewHandler(usersService)
+
+	// 5a. Inisialisasi Domain Notifications (Harus awal karena banyak yang butuh)
+	notifRepo := notification.NewRepository(db)
+	notifService := notification.NewService(notifRepo)
+	notifHandler := notification.NewHandler(notifService)
+
+	// 5b. Inisialisasi Domain Auth
+	authRepo := auth.NewRepository(db)
+	authService := auth.NewService(authRepo, notifService)
+	authHandler := auth.NewHandler(authService)
 
 	// 5c. Inisialisasi Domain Branch
 	branchesRepo := branch.NewRepository(db)
@@ -72,23 +79,32 @@ func main() {
 
 	// 5f. Inisialisasi Domain Inventory
 	inventoryRepo := inventory.NewRepository(db)
-	inventoryService := inventory.NewService(inventoryRepo)
+	inventoryService := inventory.NewService(inventoryRepo, notifService)
 	inventoryHandler := inventory.NewHandler(inventoryService)
 
-	// 5g. Inisialisasi Domain Sales
+	// 5g. Inisialisasi Domain Payment
+	paymentRepo := payment.NewRepository(db)
+	paymentService := payment.NewService(paymentRepo, notifService)
+	paymentHandler := payment.NewHandler(paymentService)
+
+	// 5h. Inisialisasi Domain Sales
 	salesRepo := sales.NewRepository(db)
-	salesService := sales.NewService(salesRepo, branchesService, catalogService, inventoryService)
-	salesHandler := sales.NewHandler(salesService)
+	salesService := sales.NewService(salesRepo, branchesService, catalogService, inventoryService, notifService, usersService)
+	salesHandler := sales.NewHandler(salesService, paymentService)
 
 	// 6. Daftarkan router per-domain (Public)
 	authRoutes := r.Group("/auth")
 	{
 		authRoutes.POST("/register", authHandler.Register)
+		authRoutes.POST("/verify-email", authHandler.VerifyEmail)
 		authRoutes.POST("/login", authHandler.Login)
 		authRoutes.POST("/forgot-password", authHandler.ForgotPassword)
 		authRoutes.POST("/reset-password", authHandler.ResetPassword)
 		authRoutes.DELETE("/logout", authHandler.Logout)
 	}
+
+	// Webhook Midtrans (Public)
+	r.POST("/payment/midtrans/webhook", paymentHandler.MidtransWebhook)
 
 	// 7. Expose Static Folder (Supaya gambar bisa diakses publik)
 	r.Static("/uploads", "./uploads")
@@ -153,6 +169,10 @@ func main() {
 		protectedRoutes.GET("/carts/me", salesHandler.GetMyCart)
 
 		protectedRoutes.POST("/checkout", salesHandler.Checkout)
+
+		// Notifications Management
+		protectedRoutes.GET("/notifications", notifHandler.GetMyNotifications)
+		protectedRoutes.PUT("/notifications/:id/read", notifHandler.MarkAsRead)
 	}
 
 	// 8. Daftarkan router dengan Optional Auth (untuk public route yang behavior-nya berubah jika login)

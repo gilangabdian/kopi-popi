@@ -28,6 +28,8 @@ Hingga saat ini, sistem *backend* telah memiliki implementasi penuh untuk domain
 5. **Media (`internal/media`)**: Sentralisasi unggah gambar/file dengan proteksi ekstensi (JPG, PNG) dan batas ukuran (5MB). Mendukung folder dinamis.
 6. **Inventory (`internal/inventory`)**: Manajemen stok fisik cabang, buku riwayat mutasi (kartu stok), dan alur logistik permintaan barang antar cabang (Restock Requests) yang sudah dilengkapi dengan fitur persetujuan dan pemberian alasan penolakan (*Rejection Reason*) oleh Admin.
 7. **Sales (`internal/sales`)**: Inti dari sistem POS (Point of Sales). Mengurus *Shift* Kasir (Buka/Tutup Kasir dengan rekonsiliasi kas), *Cart* Online (Pelanggan) & Offline (Hold Bill / Meja), dan *Checkout* transaksi yang otomatis memotong stok *Inventory* berbasis resep (*Bill of Materials*).
+8. **Notifications (`internal/notification`)**: Menangani *In-App Notifications* (Notifikasi web) dan *Email Notifications* Asynchronous via SMTP. Modul ini menjadi fondasi utama untuk pengiriman e-Receipt (Invoice), peringatan stok minimum, dan persetujuan Restock.
+9. **Payment (`internal/payment`)**: Integrasi Gateway Pembayaran menggunakan **Midtrans**. Modul ini memisahkan logika khusus pembayaran seperti Request Snap Token (URL Pembayaran) dan Webhook Handler untuk memproses callback dari Midtrans yang secara otomatis memotong stok dan mengubah status Transaksi.
 
 ---
 
