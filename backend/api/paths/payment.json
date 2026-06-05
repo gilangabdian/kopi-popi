@@ -1,0 +1,48 @@
+{
+    "/payment/midtrans/webhook": {
+        "post": {
+            "tags": ["Payment"],
+            "summary": "Midtrans Webhook Callback",
+            "description": "Endpoint for Midtrans to send notifications about transaction status changes.",
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "order_id": {
+                                    "type": "string"
+                                },
+                                "transaction_status": {
+                                    "type": "string"
+                                },
+                                "gross_amount": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Webhook received successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "example": "success"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

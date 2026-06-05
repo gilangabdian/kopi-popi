@@ -39,6 +39,24 @@ func (h *Handler) Register(c *gin.Context) {
 	})
 }
 
+func (h *Handler) VerifyEmail(c *gin.Context) {
+	var req VerifyEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.service.VerifyEmail(c.Request.Context(), req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{
+		"message": "Email berhasil diverifikasi. Silakan login.",
+	})
+}
+
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

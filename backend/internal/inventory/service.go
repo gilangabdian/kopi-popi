@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/gilangages/kopi-popi/internal/notification"
 	"gorm.io/gorm"
 )
 
@@ -17,11 +18,12 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	repo     Repository
+	notifSvc notification.Service
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(repo Repository, notifSvc notification.Service) Service {
+	return &service{repo: repo, notifSvc: notifSvc}
 }
 
 func (s *service) GetBranchStock(branchID int, requestingRole string, requestingBranchID *int) ([]BranchInventory, error) {
@@ -68,7 +70,22 @@ func (s *service) CreateRestockRequest(req *RestockRequest, requestingRole strin
 		return errors.New("invalid: request must have at least one item")
 	}
 
-	return s.repo.CreateRestockRequest(req)
+	err := s.repo.CreateRestockRequest(req)
+	if err != nil {
+		return err
+	}
+
+	if s.notifSvc != nil {
+		// Mock branch name and admin email
+		branchName := "Cabang " + string(rune(req.BranchID+'0')) // Simple mock
+		s.notifSvc.SendRestockRequestEmail("admin@kopi-popi.com", branchName, req.ID)
+		
+		// In-App Notif for Admin
+		// Assume admin role is checked or we send to a specific topic
+		// s.notifSvc.SendInAppNotification(...)
+	}
+
+	return nil
 }
 
 func (s *service) UpdateRestockStatus(id string, newStatus string, rejectionReason *string, requestingRole string, requestingBranchID *int) error {
@@ -95,7 +112,12 @@ func (s *service) UpdateRestockStatus(id string, newStatus string, rejectionReas
 		if newStatus == "Approved" {
 			rejectionReason = nil
 		}
-		return s.repo.UpdateRestockStatus(id, newStatus, rejectionReason)
+		err = s.repo.UpdateRestockStatus(id, newStatus, rejectionReason)
+		if err == nil && s.notifSvc != nil {
+			branchName := "Cabang " + string(rune(req.BranchID+'0'))
+			s.notifSvc.SendRestockResultEmail("manager@kopi-popi.com", branchName, req.ID, newStatus)
+		}
+		return err
 	}
 
 	// Manager action: Mark as Delivered

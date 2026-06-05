@@ -163,7 +163,7 @@ func (m *MockInventoryService) DeductStock(tx interface{}, branchID int, materia
 
 func TestOpenShift_Success(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
 	
 	cashierID := uuid.NewString()
 	mockRepo.On("GetOpenShiftByCashier", cashierID).Return(nil, nil)
@@ -180,7 +180,7 @@ func TestOpenShift_Success(t *testing.T) {
 
 func TestOpenShift_AlreadyOpen(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
 	
 	cashierID := uuid.NewString()
 	mockRepo.On("GetOpenShiftByCashier", cashierID).Return(&Shift{Status: "Open"}, nil)
@@ -195,7 +195,7 @@ func TestOpenShift_AlreadyOpen(t *testing.T) {
 
 func TestInitOfflineCart(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
 	
 	mockRepo.On("CreateCart", mock.AnythingOfType("*sales.Cart")).Return(nil)
 	
@@ -211,7 +211,7 @@ func TestInitOfflineCart(t *testing.T) {
 
 func TestAddItemToOfflineCart(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
 	
 	cartID := uuid.NewString()
 	cartName := "Meja 2"
@@ -230,7 +230,7 @@ func TestAddItemToOfflineCart(t *testing.T) {
 
 func TestCheckout_EmptyCart(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
 	
 	cartID := uuid.NewString()
 	customerID := uuid.NewString()

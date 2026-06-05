@@ -14,6 +14,10 @@ type Repository interface {
 	FindPasswordResetByToken(ctx context.Context, token string) (*PasswordReset, error)
 	UpdatePassword(ctx context.Context, email string, hashedPassword string) error
 	DeletePasswordReset(ctx context.Context, email string) error
+	CreateEmailVerification(ctx context.Context, ev *EmailVerification) error
+	GetEmailVerification(ctx context.Context, email string) (*EmailVerification, error)
+	DeleteEmailVerification(ctx context.Context, email string) error
+	VerifyUserEmail(ctx context.Context, email string) error
 }
 
 type authRepository struct {
@@ -75,4 +79,28 @@ func (r *authRepository) UpdatePassword(ctx context.Context, email string, hashe
 
 func (r *authRepository) DeletePasswordReset(ctx context.Context, email string) error {
 	return r.db.WithContext(ctx).Where("email = ?", email).Delete(&PasswordReset{}).Error
+}
+
+func (r *authRepository) CreateEmailVerification(ctx context.Context, ev *EmailVerification) error {
+	return r.db.WithContext(ctx).Create(ev).Error
+}
+
+func (r *authRepository) GetEmailVerification(ctx context.Context, email string) (*EmailVerification, error) {
+	var ev EmailVerification
+	err := r.db.WithContext(ctx).Where("email = ?", email).Order("created_at desc").First(&ev).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &ev, nil
+}
+
+func (r *authRepository) DeleteEmailVerification(ctx context.Context, email string) error {
+	return r.db.WithContext(ctx).Where("email = ?", email).Delete(&EmailVerification{}).Error
+}
+
+func (r *authRepository) VerifyUserEmail(ctx context.Context, email string) error {
+	return r.db.WithContext(ctx).Model(&User{}).Where("email = ?", email).Update("is_verified", true).Error
 }

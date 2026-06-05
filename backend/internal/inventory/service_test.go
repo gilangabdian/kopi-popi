@@ -52,7 +52,7 @@ func (m *MockRepository) DeductStock(tx *gorm.DB, branchID int, materialID int, 
 
 func TestCreateRestockRequest_Unauthorized(t *testing.T) {
 	mockRepo := new(MockRepository)
-	service := inventory.NewService(mockRepo)
+	service := inventory.NewService(mockRepo, nil)
 
 	req := &inventory.RestockRequest{
 		Items: []inventory.RestockItem{{MaterialID: 1, QuantityRequested: 10}},
@@ -70,7 +70,7 @@ func TestCreateRestockRequest_Unauthorized(t *testing.T) {
 
 func TestUpdateStatus_Approved_ByManager(t *testing.T) {
 	mockRepo := new(MockRepository)
-	service := inventory.NewService(mockRepo)
+	service := inventory.NewService(mockRepo, nil)
 
 	reqID := "req-1"
 	mockRepo.On("GetRestockRequestByID", reqID).Return(&inventory.RestockRequest{ID: reqID, Status: "Pending"}, nil)
@@ -88,7 +88,7 @@ func TestUpdateStatus_Approved_ByManager(t *testing.T) {
 
 func TestMarkAsDelivered_Success(t *testing.T) {
 	mockRepo := new(MockRepository)
-	service := inventory.NewService(mockRepo)
+	service := inventory.NewService(mockRepo, nil)
 
 	reqID := "req-1"
 	branchID := 1
@@ -105,7 +105,7 @@ func TestMarkAsDelivered_Success(t *testing.T) {
 
 func TestMarkAsDelivered_WrongBranch(t *testing.T) {
 	mockRepo := new(MockRepository)
-	service := inventory.NewService(mockRepo)
+	service := inventory.NewService(mockRepo, nil)
 
 	reqID := "req-1"
 	actualBranchID := 2
@@ -124,7 +124,7 @@ func TestMarkAsDelivered_WrongBranch(t *testing.T) {
 
 func TestUpdateStatus_Rejected_MissingReason(t *testing.T) {
 	mockRepo := new(MockRepository)
-	service := inventory.NewService(mockRepo)
+	service := inventory.NewService(mockRepo, nil)
 
 	reqID := "req-1"
 	mockRepo.On("GetRestockRequestByID", reqID).Return(&inventory.RestockRequest{ID: reqID, Status: "Pending"}, nil)
@@ -140,7 +140,7 @@ func TestUpdateStatus_Rejected_MissingReason(t *testing.T) {
 
 func TestUpdateStatus_Rejected_Success(t *testing.T) {
 	mockRepo := new(MockRepository)
-	service := inventory.NewService(mockRepo)
+	service := inventory.NewService(mockRepo, nil)
 
 	reqID := "req-1"
 	reason := "Out of stock"

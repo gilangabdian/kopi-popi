@@ -29,6 +29,9 @@
     "/auth/register": {
       "$ref": "./paths/auth.json#/register"
     },
+    "/auth/verify-email": {
+      "$ref": "./paths/auth.json#/verify-email"
+    },
     "/auth/login": {
       "$ref": "./paths/auth.json#/login"
     },
@@ -147,10 +150,13 @@
       "$ref": "./paths/media.json#/uploads"
     },
     "/notifications": {
-      "$ref": "./paths/notifications.json#/notifications"
+      "$ref": "./paths/notifications.json#/~1notifications"
     },
     "/notifications/{id}/read": {
-      "$ref": "./paths/notifications.json#/read"
+      "$ref": "./paths/notifications.json#/~1notifications~1{id}~1read"
+    },
+    "/payment/midtrans/webhook": {
+      "$ref": "./paths/payment.json#/~1payment~1midtrans~1webhook"
     }
   }
 }
