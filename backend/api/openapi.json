@@ -113,6 +113,12 @@
     "/inventories/restocks/{id}/status": {
       "$ref": "./paths/inventories.json#/restocks-status"
     },
+    "/inventories/central-warehouse/incoming": {
+      "$ref": "./paths/inventories.json#/central-warehouse-incoming"
+    },
+    "/inventories/branches/{branch_id}/allocate": {
+      "$ref": "./paths/inventories.json#/branch-allocate"
+    },
     "/carts/offline": {
       "$ref": "./paths/sales.json#/init-offline-cart"
     },

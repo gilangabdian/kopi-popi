@@ -1302,6 +1302,92 @@
         }
       }
     },
+    "/inventories/central-warehouse/incoming": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "Mencatat kedatangan barang dari Supplier ke Gudang Pusat (Admin Only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiveIncomingStockPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stok berhasil diterima dan dimasukkan ke gudang pusat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/inventories/branches/{branch_id}/allocate": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "Mendistribusikan / mengatur stok ke cabang lain memotong dari Gudang Pusat (Admin Only)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "branch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocateStockPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stok berhasil dialokasikan ke cabang",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request atau stok Gudang Pusat tidak cukup"
+          }
+        }
+      }
+    },
     "/carts/offline": {
       "post": {
         "summary": "Init Offline Cart (Cashier)",
@@ -2404,6 +2490,96 @@
           "rejection_reason": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "ReceiveIncomingStockPayload": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "example": "Pembelian rutin dari agen"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "material_id",
+                "quantity",
+                "supplier_name"
+              ],
+              "properties": {
+                "material_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "example": 80
+                },
+                "supplier_name": {
+                  "type": "string",
+                  "example": "Toko A"
+                },
+                "supplier_phone": {
+                  "type": "string",
+                  "example": "08123"
+                }
+              }
+            }
+          }
+        }
+      },
+      "GenericSuccess": {
+        "description": "Success operation",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Operation success"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AllocateStockPayload": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "material_id",
+                "quantity"
+              ],
+              "properties": {
+                "material_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "quantity": {
+                  "type": "number",
+                  "example": 10
+                }
+              }
+            }
           }
         }
       },

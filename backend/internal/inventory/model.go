@@ -48,3 +48,45 @@ type RestockItem struct {
 	Material          catalog.Material `json:"material" gorm:"foreignKey:MaterialID"`
 	QuantityRequested float64          `json:"quantity_requested" gorm:"type:decimal(12,2)"`
 }
+
+// IncomingStock merepresentasikan 1 kali kedatangan barang ke Gudang Pusat
+type IncomingStock struct {
+	ID        string              `json:"id" gorm:"primaryKey"` // UUID
+	Notes     string              `json:"notes"`
+	CreatedAt time.Time           `json:"created_at"`
+	Items     []IncomingStockItem `json:"items" gorm:"foreignKey:IncomingStockID"`
+}
+
+// IncomingStockItem merepresentasikan detail bahan baku beserta info supplier saat kedatangan barang
+type IncomingStockItem struct {
+	ID              int              `json:"id" gorm:"primaryKey;autoIncrement"`
+	IncomingStockID string           `json:"incoming_stock_id"`
+	MaterialID      int              `json:"material_id"`
+	Material        catalog.Material `json:"material" gorm:"foreignKey:MaterialID"`
+	Quantity        float64          `json:"quantity" gorm:"type:decimal(12,2)"`
+	SupplierName    string           `json:"supplier_name"`
+	SupplierPhone   string           `json:"supplier_phone"`
+}
+
+// Payload untuk API POST /inventory/central-warehouse/incoming
+type ReceiveIncomingStockPayload struct {
+	Items []IncomingStockItemPayload `json:"items" binding:"required,min=1"`
+	Notes string                     `json:"notes"`
+}
+
+type IncomingStockItemPayload struct {
+	MaterialID    int     `json:"material_id" binding:"required"`
+	Quantity      float64 `json:"quantity" binding:"required,gt=0"`
+	SupplierName  string  `json:"supplier_name" binding:"required"`
+	SupplierPhone string  `json:"supplier_phone"`
+}
+
+// Payload untuk API POST /inventory/branches/:branch_id/allocate
+type AllocateStockPayload struct {
+	Items []AllocateStockItemPayload `json:"items" binding:"required,min=1"`
+}
+
+type AllocateStockItemPayload struct {
+	MaterialID int     `json:"material_id" binding:"required"`
+	Quantity   float64 `json:"quantity" binding:"required,gt=0"`
+}

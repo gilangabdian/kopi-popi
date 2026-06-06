@@ -178,3 +178,53 @@ func (h *Handler) UpdateRestockStatus(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, gin.H{"message": "status updated successfully"})
 }
+
+func (h *Handler) ReceiveIncomingStock(c *gin.Context) {
+	var payload ReceiveIncomingStockPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	role := c.GetString("role")
+	if err := h.service.ReceiveIncomingStock(payload, role); err != nil {
+		if err.Error() == "forbidden: only admin can receive incoming stock" {
+			response.Error(c, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{"message": "stok berhasil diterima dan dimasukkan ke gudang pusat"})
+}
+
+func (h *Handler) AllocateStock(c *gin.Context) {
+	branchIDStr := c.Param("branch_id")
+	branchID, err := strconv.Atoi(branchIDStr)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "branch_id tidak valid")
+		return
+	}
+
+	var payload AllocateStockPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	role := c.GetString("role")
+	if err := h.service.AllocateStock(branchID, payload, role); err != nil {
+		if len(err.Error()) > 9 && err.Error()[:9] == "forbidden" {
+			response.Error(c, http.StatusForbidden, err.Error())
+			return
+		} else if len(err.Error()) > 8 && err.Error()[:8] == "conflict" {
+			response.Error(c, http.StatusConflict, err.Error())
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{"message": "stok berhasil dialokasikan ke cabang"})
+}
