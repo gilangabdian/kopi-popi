@@ -176,6 +176,8 @@ func main() {
 		protectedRoutes.POST("/shifts/open", salesHandler.OpenShift)
 		protectedRoutes.POST("/shifts/close", salesHandler.CloseShift)
 		protectedRoutes.GET("/shifts/me", salesHandler.GetMyOpenShift)
+		protectedRoutes.POST("/shifts/me/expenses", salesHandler.RecordExpense)
+		protectedRoutes.GET("/shifts/me/expenses", salesHandler.GetMyExpenses)
 
 		protectedRoutes.POST("/carts/offline", salesHandler.InitOfflineCart)
 		protectedRoutes.POST("/carts/items", salesHandler.AddCartItem)

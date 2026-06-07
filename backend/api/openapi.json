@@ -149,6 +149,9 @@
     "/shifts/close": {
       "$ref": "./paths/shifts.json#/close"
     },
+    "/shifts/me/expenses": {
+      "$ref": "./paths/shifts.json#/expenses"
+    },
     "/shifts/{id}/verify": {
       "$ref": "./paths/shifts.json#/verify"
     },

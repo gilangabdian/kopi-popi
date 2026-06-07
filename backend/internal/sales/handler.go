@@ -92,6 +92,50 @@ func (h *Handler) GetMyOpenShift(c *gin.Context) {
 	response.Success(c, 200, shift) // can be null if no open shift
 }
 
+// --- EXPENSES ---
+
+func (h *Handler) RecordExpense(c *gin.Context) {
+	role := c.GetString("role")
+	if role != "Cashier" && role != "Manager" {
+		response.Error(c, 403, "forbidden: only cashier or manager can record expenses")
+		return
+	}
+
+	userID := c.GetString("user_id")
+
+	var req RecordExpenseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, 400, "invalid payload: "+err.Error())
+		return
+	}
+
+	err := h.service.RecordExpense(c.Request.Context(), userID, req)
+	if err != nil {
+		response.Error(c, 400, err.Error())
+		return
+	}
+
+	response.Success(c, 201, "expense recorded successfully")
+}
+
+func (h *Handler) GetMyExpenses(c *gin.Context) {
+	role := c.GetString("role")
+	if role != "Cashier" && role != "Manager" {
+		response.Error(c, 403, "forbidden: only cashier or manager can view expenses")
+		return
+	}
+
+	userID := c.GetString("user_id")
+
+	expenses, err := h.service.GetMyExpenses(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, 400, err.Error())
+		return
+	}
+
+	response.Success(c, 200, expenses)
+}
+
 // --- CARTS ---
 
 func (h *Handler) AddCartItem(c *gin.Context) {

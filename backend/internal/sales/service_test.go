@@ -101,6 +101,14 @@ func (m *MockRepository) GetShiftByID(id string) (*Shift, error) {
 	}
 	return args.Get(0).(*Shift), args.Error(1)
 }
+func (m *MockRepository) CreateExpense(tx *gorm.DB, expense *Expense) error {
+	args := m.Called(tx, expense)
+	return args.Error(0)
+}
+func (m *MockRepository) GetExpensesByShiftID(shiftID string) ([]Expense, error) {
+	args := m.Called(shiftID)
+	return args.Get(0).([]Expense), args.Error(1)
+}
 
 // Mock Branch Service
 type MockBranchService struct {

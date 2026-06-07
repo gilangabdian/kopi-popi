@@ -13,6 +13,10 @@ type Repository interface {
 	GetOpenShiftByCashier(cashierID string) (*Shift, error)
 	GetShiftByID(id string) (*Shift, error)
 
+	// Expenses
+	CreateExpense(tx *gorm.DB, expense *Expense) error
+	GetExpensesByShiftID(shiftID string) ([]Expense, error)
+
 	// Carts
 	CreateCart(cart *Cart) error
 	GetCartByID(id string) (*Cart, error)
@@ -75,6 +79,22 @@ func (r *repository) GetShiftByID(id string) (*Shift, error) {
 		return nil, err
 	}
 	return &shift, nil
+}
+
+// --- EXPENSES ---
+
+func (r *repository) CreateExpense(tx *gorm.DB, expense *Expense) error {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	return db.Create(expense).Error
+}
+
+func (r *repository) GetExpensesByShiftID(shiftID string) ([]Expense, error) {
+	var expenses []Expense
+	err := r.db.Where("shift_id = ?", shiftID).Order("created_at desc").Find(&expenses).Error
+	return expenses, err
 }
 
 // --- CARTS ---

@@ -20,6 +20,10 @@ type Service interface {
 	CloseShift(ctx context.Context, cashierID string, req CloseShiftRequest) error
 	GetMyOpenShift(ctx context.Context, cashierID string) (*Shift, error)
 
+	// Expenses
+	RecordExpense(ctx context.Context, cashierID string, req RecordExpenseRequest) error
+	GetMyExpenses(ctx context.Context, cashierID string) ([]Expense, error)
+
 	// Carts (Online & Offline)
 	AddCartItem(ctx context.Context, customerID *string, branchID int, req AddCartItemRequest) error
 	InitOfflineCart(ctx context.Context, branchID int, req InitOfflineCartRequest) (*Cart, error)
@@ -123,6 +127,41 @@ func (s *service) CloseShift(ctx context.Context, cashierID string, req CloseShi
 
 func (s *service) GetMyOpenShift(ctx context.Context, cashierID string) (*Shift, error) {
 	return s.repo.GetOpenShiftByCashier(cashierID)
+}
+
+// --- EXPENSES ---
+
+func (s *service) RecordExpense(ctx context.Context, cashierID string, req RecordExpenseRequest) error {
+	shift, err := s.repo.GetOpenShiftByCashier(cashierID)
+	if err != nil {
+		return errors.New("no open shift found")
+	}
+
+	return s.repo.WithTransaction(func(tx *gorm.DB) error {
+		expense := &Expense{
+			ShiftID:     shift.ID,
+			Amount:      req.Amount,
+			Description: req.Description,
+		}
+		if err := s.repo.CreateExpense(tx, expense); err != nil {
+			return err
+		}
+
+		shift.ExpectedCash -= req.Amount
+		if err := tx.Save(shift).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (s *service) GetMyExpenses(ctx context.Context, cashierID string) ([]Expense, error) {
+	shift, err := s.repo.GetOpenShiftByCashier(cashierID)
+	if err != nil {
+		return nil, errors.New("no open shift found")
+	}
+
+	return s.repo.GetExpensesByShiftID(shift.ID)
 }
 
 // --- CARTS ---
