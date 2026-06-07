@@ -146,7 +146,7 @@
     "/shifts/open": {
       "$ref": "./paths/shifts.json#/open"
     },
-    "/shifts/{id}/close": {
+    "/shifts/close": {
       "$ref": "./paths/shifts.json#/close"
     },
     "/shifts/{id}/verify": {
@@ -163,6 +163,15 @@
     },
     "/payment/midtrans/webhook": {
       "$ref": "./paths/payment.json#/~1payment~1midtrans~1webhook"
+    },
+    "/reports/sales": {
+      "$ref": "./paths/reports.json#/sales"
+    },
+    "/reports/top-products": {
+      "$ref": "./paths/reports.json#/top-products"
+    },
+    "/reports/shifts": {
+      "$ref": "./paths/reports.json#/shifts"
     }
   }
 }

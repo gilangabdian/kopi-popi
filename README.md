@@ -12,6 +12,7 @@ Sistem Point of Sale (POS) dan Inventory Multi-Outlet untuk Kopi-Popi.
    - Manajemen Keranjang (Customer Online & Hold Bill Offline)
    - Checkout & Integrasi Pembayaran (Midtrans)
    - Pemrosesan Transaksi / Kitchen Display System (GET & UPDATE status pesanan)
+6. **Dashboard & Analytics**: Laporan pendapatan penjualan (termasuk breakdown metode pembayaran), produk terlaris, dan histori shift kasir.
 
 ## API Documentation
 Dokumentasi API tersedia dalam format OpenAPI 3.0.
