@@ -20,6 +20,15 @@ type Shift struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
+type Expense struct {
+	ID          int       `gorm:"primaryKey" json:"id"`
+	ShiftID     string    `gorm:"size:36;not null" json:"shift_id"`
+	Amount      float64   `gorm:"not null" json:"amount"`
+	Description string    `gorm:"type:text;not null" json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // Cart merepresentasikan tabel carts (bisa untuk Pelanggan Online / Kasir Offline Hold Bill)
 type Cart struct {
 	ID         string     `json:"id" gorm:"primaryKey"`
@@ -99,4 +108,9 @@ type CheckoutRequest struct {
 
 type UpdateTransactionStatusPayload struct {
 	Status string `json:"status" binding:"required,oneof=Paid Preparing Ready Completed Cancelled"`
+}
+
+type RecordExpenseRequest struct {
+	Amount      float64 `json:"amount" binding:"required,gt=0"`
+	Description string  `json:"description" binding:"required"`
 }

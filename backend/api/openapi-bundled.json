@@ -1786,6 +1786,62 @@
         }
       }
     },
+    "/shifts/me/expenses": {
+      "get": {
+        "summary": "Get My Expenses for Current Shift",
+        "tags": [
+          "Shifts",
+          "Expenses"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GenericSuccess"
+          }
+        }
+      },
+      "post": {
+        "summary": "Record Expense for Current Shift",
+        "tags": [
+          "Shifts",
+          "Expenses"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "example": 50000
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Beli es batu"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/GenericSuccess"
+          }
+        }
+      }
+    },
     "/shifts/{id}/verify": {
       "patch": {
         "summary": "Verify Shift",
