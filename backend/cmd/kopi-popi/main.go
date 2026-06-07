@@ -154,7 +154,15 @@ func main() {
 		// Inventory Management (ADMIN & MANAGER)
 		protectedRoutes.GET("/inventories/branches/:branch_id", inventoryHandler.GetBranchStock)
 		protectedRoutes.GET("/inventories/movements", inventoryHandler.GetInventoryMovements)
-		protectedRoutes.GET("/inventories/restocks", inventoryHandler.GetRestockRequests)
+
+		// Stok Gudang Pusat (Admin Only)
+		protectedRoutes.POST("/inventories/central-warehouse/incoming", inventoryHandler.ReceiveIncomingStock)
+		
+		// Alokasi Stok Cabang (Admin Only)
+		protectedRoutes.POST("/inventories/branches/:branch_id/allocate", inventoryHandler.AllocateStock)
+
+		// Restock Requests
+		protectedRoutes.GET("/inventories/requests", inventoryHandler.GetRestockRequests)
 		protectedRoutes.POST("/inventories/restocks", inventoryHandler.CreateRestockRequest)
 		protectedRoutes.PATCH("/inventories/restocks/:id/status", inventoryHandler.UpdateRestockStatus)
 
@@ -169,6 +177,10 @@ func main() {
 		protectedRoutes.GET("/carts/me", salesHandler.GetMyCart)
 
 		protectedRoutes.POST("/checkout", salesHandler.Checkout)
+		
+		protectedRoutes.GET("/transactions", salesHandler.GetTransactions)
+		protectedRoutes.GET("/transactions/:id", salesHandler.GetTransactionByID)
+		protectedRoutes.PATCH("/transactions/:id/status", salesHandler.UpdateTransactionStatus)
 
 		// Notifications Management
 		protectedRoutes.GET("/notifications", notifHandler.GetMyNotifications)

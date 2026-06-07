@@ -28,8 +28,7 @@ type Repository interface {
 	// Transactions
 	CreateTransaction(tx *gorm.DB, transaction *Transaction) error
 	GetTransactionByID(id string) (*Transaction, error)
-	GetTransactionsByBranch(branchID int) ([]Transaction, error)
-	GetTransactionsByCustomer(customerID string) ([]Transaction, error)
+	GetTransactions(branchID *int, customerID *string, status *string, startDate *string, endDate *string) ([]Transaction, error)
 	UpdateTransactionStatus(id string, status string) error
 
 	// DB Transaction Helper
@@ -180,21 +179,24 @@ func (r *repository) GetTransactionByID(id string) (*Transaction, error) {
 	return &transaction, nil
 }
 
-func (r *repository) GetTransactionsByBranch(branchID int) ([]Transaction, error) {
+func (r *repository) GetTransactions(branchID *int, customerID *string, status *string, startDate *string, endDate *string) ([]Transaction, error) {
 	var transactions []Transaction
-	err := r.db.Preload("Details").Preload("Details.Product").
-		Where("branch_id = ?", branchID).
-		Order("created_at desc").
-		Find(&transactions).Error
-	return transactions, err
-}
+	query := r.db.Preload("Details").Preload("Details.Product")
 
-func (r *repository) GetTransactionsByCustomer(customerID string) ([]Transaction, error) {
-	var transactions []Transaction
-	err := r.db.Preload("Details").Preload("Details.Product").
-		Where("customer_id = ?", customerID).
-		Order("created_at desc").
-		Find(&transactions).Error
+	if branchID != nil {
+		query = query.Where("branch_id = ?", *branchID)
+	}
+	if customerID != nil {
+		query = query.Where("customer_id = ?", *customerID)
+	}
+	if status != nil {
+		query = query.Where("status = ?", *status)
+	}
+	if startDate != nil && endDate != nil {
+		query = query.Where("created_at BETWEEN ? AND ?", *startDate+" 00:00:00", *endDate+" 23:59:59")
+	}
+
+	err := query.Order("created_at desc").Find(&transactions).Error
 	return transactions, err
 }
 

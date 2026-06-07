@@ -278,3 +278,117 @@ func (h *Handler) Checkout(c *gin.Context) {
 		"payment_url": paymentURL,
 	})
 }
+
+// --- TRANSACTIONS ---
+
+func (h *Handler) GetTransactions(c *gin.Context) {
+	role := c.GetString("role")
+	var reqBranchID *int
+	if bID, exists := c.Get("branch_id"); exists && bID != nil {
+		val := int(bID.(float64))
+		reqBranchID = &val
+	}
+
+	var reqCustomerID *string
+	if uID := c.GetString("user_id"); role == "Customer" {
+		reqCustomerID = &uID
+	}
+
+	// Parsing Filters
+	var statusFilter *string
+	if status := c.Query("status"); status != "" {
+		statusFilter = &status
+	}
+	var startDateFilter *string
+	if startDate := c.Query("start_date"); startDate != "" {
+		startDateFilter = &startDate
+	}
+	var endDateFilter *string
+	if endDate := c.Query("end_date"); endDate != "" {
+		endDateFilter = &endDate
+	}
+
+	// For admin, they can pass branch_id in query
+	if role == "Admin" || role == "ADMIN" {
+		if branchQ := c.Query("branch_id"); branchQ != "" {
+			if b, err := strconv.Atoi(branchQ); err == nil {
+				reqBranchID = &b
+			}
+		}
+	}
+
+	transactions, err := h.service.GetTransactions(c.Request.Context(), role, reqBranchID, reqCustomerID, statusFilter, startDateFilter, endDateFilter)
+	if err != nil {
+		if len(err.Error()) > 9 && err.Error()[:9] == "forbidden" {
+			response.Error(c, 403, err.Error())
+		} else if len(err.Error()) > 12 && err.Error()[:12] == "unauthorized" {
+			response.Error(c, 401, err.Error())
+		} else {
+			response.Error(c, 500, err.Error())
+		}
+		return
+	}
+
+	response.Success(c, 200, transactions)
+}
+
+func (h *Handler) GetTransactionByID(c *gin.Context) {
+	id := c.Param("id")
+	role := c.GetString("role")
+	var reqBranchID *int
+	if bID, exists := c.Get("branch_id"); exists && bID != nil {
+		val := int(bID.(float64))
+		reqBranchID = &val
+	}
+
+	var reqCustomerID *string
+	if uID := c.GetString("user_id"); role == "Customer" {
+		reqCustomerID = &uID
+	}
+
+	trx, err := h.service.GetTransactionByID(c.Request.Context(), id, role, reqBranchID, reqCustomerID)
+	if err != nil {
+		if len(err.Error()) > 9 && err.Error()[:9] == "forbidden" {
+			response.Error(c, 403, err.Error())
+		} else if len(err.Error()) > 9 && err.Error()[:9] == "not found" {
+			response.Error(c, 404, err.Error())
+		} else {
+			response.Error(c, 500, err.Error())
+		}
+		return
+	}
+
+	response.Success(c, 200, trx)
+}
+
+func (h *Handler) UpdateTransactionStatus(c *gin.Context) {
+	id := c.Param("id")
+	role := c.GetString("role")
+	var reqBranchID *int
+	if bID, exists := c.Get("branch_id"); exists && bID != nil {
+		val := int(bID.(float64))
+		reqBranchID = &val
+	}
+
+	var payload UpdateTransactionStatusPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		response.Error(c, 400, "invalid payload: "+err.Error())
+		return
+	}
+
+	err := h.service.UpdateTransactionStatus(c.Request.Context(), id, payload.Status, role, reqBranchID)
+	if err != nil {
+		if len(err.Error()) > 9 && err.Error()[:9] == "forbidden" {
+			response.Error(c, 403, err.Error())
+		} else if len(err.Error()) > 8 && err.Error()[:8] == "conflict" {
+			response.Error(c, 409, err.Error())
+		} else if len(err.Error()) > 9 && err.Error()[:9] == "not found" {
+			response.Error(c, 404, err.Error())
+		} else {
+			response.Error(c, 500, err.Error())
+		}
+		return
+	}
+
+	response.Success(c, 200, "status updated successfully")
+}

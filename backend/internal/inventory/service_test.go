@@ -49,6 +49,14 @@ func (m *MockRepository) DeductStock(tx *gorm.DB, branchID int, materialID int, 
 	args := m.Called(tx, branchID, materialID, quantity, description)
 	return args.Error(0)
 }
+func (m *MockRepository) ReceiveIncomingStock(stock *inventory.IncomingStock) error {
+	args := m.Called(stock)
+	return args.Error(0)
+}
+func (m *MockRepository) AllocateStock(branchID int, payload []inventory.AllocateStockItemPayload) error {
+	args := m.Called(branchID, payload)
+	return args.Error(0)
+}
 
 func TestCreateRestockRequest_Unauthorized(t *testing.T) {
 	mockRepo := new(MockRepository)

@@ -15,8 +15,10 @@ type Repository interface {
 	GetRestockRequestByID(id string) (*RestockRequest, error)
 	CreateRestockRequest(req *RestockRequest) error
 	UpdateRestockStatus(id string, status string, rejectionReason *string) error
-	MarkAsDeliveredAndAddStock(requestID string) error
+	MarkAsDeliveredAndAddStock(id string) error
 	DeductStock(tx *gorm.DB, branchID int, materialID int, quantity float64, description string) error
+	ReceiveIncomingStock(stock *IncomingStock) error
+	AllocateStock(branchID int, payload []AllocateStockItemPayload) error
 }
 
 type repository struct {
@@ -182,3 +184,128 @@ func (r *repository) DeductStock(tx *gorm.DB, branchID int, materialID int, quan
 		return db.Model(&inv).Update("quantity", inv.Quantity-quantity).Error
 	}
 }
+
+// Menerima stok dari supplier masuk ke Gudang Pusat (Branch 1)
+func (r *repository) ReceiveIncomingStock(stock *IncomingStock) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Insert IncomingStock
+		if err := tx.Create(stock).Error; err != nil {
+			return err
+		}
+
+		// 2. Loop setiap item untuk menambah ke branch_inventories dan mencatat movement
+		for _, item := range stock.Items {
+			// Movement IN untuk Branch 1
+			movement := InventoryMovement{
+				ID:           uuid.NewString(),
+				BranchID:     1, // Hardcode Gudang Pusat = 1
+				MaterialID:   item.MaterialID,
+				MovementType: "IN",
+				Quantity:     item.Quantity,
+				Description:  "Restock Gudang Pusat dari " + item.SupplierName,
+				CreatedAt:    time.Now(),
+			}
+			if err := tx.Create(&movement).Error; err != nil {
+				return err
+			}
+
+			// Tambah stok ke Branch 1
+			var inv BranchInventory
+			err := tx.Where("branch_id = 1 AND material_id = ?", item.MaterialID).First(&inv).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				inv = BranchInventory{
+					BranchID:   1,
+					MaterialID: item.MaterialID,
+					Quantity:   item.Quantity,
+				}
+				if err := tx.Create(&inv).Error; err != nil {
+					return err
+				}
+			} else {
+				if err := tx.Model(&inv).Update("quantity", inv.Quantity+item.Quantity).Error; err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+}
+
+// Alokasi stok dari Gudang Pusat (1) ke Cabang lain
+func (r *repository) AllocateStock(branchID int, payload []AllocateStockItemPayload) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, item := range payload {
+			// 1. Cek stok Gudang Pusat
+			var centralInv BranchInventory
+			if err := tx.Where("branch_id = 1 AND material_id = ?", item.MaterialID).First(&centralInv).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return errors.New("stok gudang pusat kosong untuk material_id " + string(rune(item.MaterialID+'0')))
+				}
+				return err
+			}
+
+			if centralInv.Quantity < item.Quantity {
+				return errors.New("stok gudang pusat tidak cukup untuk material_id " + string(rune(item.MaterialID+'0')))
+			}
+
+			// 2. Potong stok Gudang Pusat
+			if err := tx.Model(&centralInv).Update("quantity", centralInv.Quantity-item.Quantity).Error; err != nil {
+				return err
+			}
+			
+			movementOut := InventoryMovement{
+				ID:           uuid.NewString(),
+				BranchID:     1,
+				MaterialID:   item.MaterialID,
+				MovementType: "OUT",
+				Quantity:     item.Quantity,
+				Description:  "Alokasi stok ke Cabang " + string(rune(branchID+'0')),
+				CreatedAt:    time.Now(),
+			}
+			if err := tx.Create(&movementOut).Error; err != nil {
+				return err
+			}
+
+			// 3. Tambah stok Cabang Tujuan
+			var targetInv BranchInventory
+			err := tx.Where("branch_id = ? AND material_id = ?", branchID, item.MaterialID).First(&targetInv).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				targetInv = BranchInventory{
+					BranchID:   branchID,
+					MaterialID: item.MaterialID,
+					Quantity:   item.Quantity,
+				}
+				if err := tx.Create(&targetInv).Error; err != nil {
+					return err
+				}
+			} else {
+				if err := tx.Model(&targetInv).Update("quantity", targetInv.Quantity+item.Quantity).Error; err != nil {
+					return err
+				}
+			}
+
+			movementIn := InventoryMovement{
+				ID:           uuid.NewString(),
+				BranchID:     branchID,
+				MaterialID:   item.MaterialID,
+				MovementType: "IN",
+				Quantity:     item.Quantity,
+				Description:  "Alokasi stok dari Gudang Pusat",
+				CreatedAt:    time.Now(),
+			}
+			if err := tx.Create(&movementIn).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+

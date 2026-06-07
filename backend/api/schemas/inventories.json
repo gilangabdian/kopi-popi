@@ -123,5 +123,42 @@
                 "nullable": true
             }
         }
+    },
+    "ReceiveIncomingStockPayload": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+            "notes": {"type": "string", "example": "Pembelian rutin dari agen"},
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["material_id", "quantity", "supplier_name"],
+                    "properties": {
+                        "material_id": {"type": "integer", "example": 1},
+                        "quantity": {"type": "number", "example": 80},
+                        "supplier_name": {"type": "string", "example": "Toko A"},
+                        "supplier_phone": {"type": "string", "example": "08123"}
+                    }
+                }
+            }
+        }
+    },
+    "AllocateStockPayload": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["material_id", "quantity"],
+                    "properties": {
+                        "material_id": {"type": "integer", "example": 1},
+                        "quantity": {"type": "number", "example": 10}
+                    }
+                }
+            }
+        }
     }
 }

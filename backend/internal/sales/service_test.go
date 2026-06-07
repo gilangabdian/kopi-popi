@@ -90,12 +90,8 @@ func (m *MockRepository) GetTransactionByID(id string) (*Transaction, error) {
 	}
 	return args.Get(0).(*Transaction), args.Error(1)
 }
-func (m *MockRepository) GetTransactionsByCustomer(customerID string) ([]Transaction, error) {
-	args := m.Called(customerID)
-	return args.Get(0).([]Transaction), args.Error(1)
-}
-func (m *MockRepository) GetTransactionsByBranch(branchID int) ([]Transaction, error) {
-	args := m.Called(branchID)
+func (m *MockRepository) GetTransactions(branchID *int, customerID *string, status *string, startDate *string, endDate *string) ([]Transaction, error) {
+	args := m.Called(branchID, customerID, status, startDate, endDate)
 	return args.Get(0).([]Transaction), args.Error(1)
 }
 func (m *MockRepository) GetShiftByID(id string) (*Shift, error) {

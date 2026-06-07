@@ -3,8 +3,10 @@ package inventory
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/gilangages/kopi-popi/internal/notification"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +17,8 @@ type Service interface {
 	CreateRestockRequest(req *RestockRequest, requestingRole string, requestingBranchID *int) error
 	UpdateRestockStatus(id string, newStatus string, rejectionReason *string, requestingRole string, requestingBranchID *int) error
 	DeductStock(tx interface{}, branchID int, materialID int, quantity float64, description string) error
+	ReceiveIncomingStock(payload ReceiveIncomingStockPayload, role string) error
+	AllocateStock(branchID int, payload AllocateStockPayload, role string) error
 }
 
 type service struct {
@@ -145,4 +149,38 @@ func (s *service) DeductStock(tx interface{}, branchID int, materialID int, quan
 		return errors.New("invalid transaction type")
 	}
 	return s.repo.DeductStock(importGormDB, branchID, materialID, quantity, description)
+}
+
+func (s *service) ReceiveIncomingStock(req ReceiveIncomingStockPayload, role string) error {
+	if strings.ToUpper(role) != "ADMIN" {
+		return errors.New("forbidden: only admin can receive incoming stock")
+	}
+
+	stock := IncomingStock{
+		ID:        uuid.NewString(),
+		Notes:     req.Notes,
+		CreatedAt: time.Now(),
+	}
+
+	for _, item := range req.Items {
+		stock.Items = append(stock.Items, IncomingStockItem{
+			MaterialID:    item.MaterialID,
+			Quantity:      item.Quantity,
+			SupplierName:  item.SupplierName,
+			SupplierPhone: item.SupplierPhone,
+		})
+	}
+
+	return s.repo.ReceiveIncomingStock(&stock)
+}
+
+func (s *service) AllocateStock(branchID int, payload AllocateStockPayload, role string) error {
+	if strings.ToUpper(role) != "ADMIN" {
+		return errors.New("forbidden: only admin can allocate stock")
+	}
+
+	if branchID == 1 {
+		return errors.New("tidak bisa alokasi ke cabang 1 karena cabang 1 adalah gudang pusat")
+	}
+	return s.repo.AllocateStock(branchID, payload.Items)
 }
