@@ -11,6 +11,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/payment"
 	"github.com/gilangages/kopi-popi/internal/sales"
 	"github.com/gilangages/kopi-popi/internal/user"
+	"github.com/gilangages/kopi-popi/internal/analytics"
 	"github.com/gilangages/kopi-popi/pkg/middleware"
 	"github.com/gilangages/kopi-popi/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -91,6 +92,11 @@ func main() {
 	salesRepo := sales.NewRepository(db)
 	salesService := sales.NewService(salesRepo, branchesService, catalogService, inventoryService, notifService, usersService)
 	salesHandler := sales.NewHandler(salesService, paymentService)
+
+	// 5i. Inisialisasi Domain Analytics
+	analyticsRepo := analytics.NewRepository(db)
+	analyticsService := analytics.NewService(analyticsRepo)
+	analyticsHandler := analytics.NewHandler(analyticsService)
 
 	// 6. Daftarkan router per-domain (Public)
 	authRoutes := r.Group("/auth")
@@ -185,6 +191,11 @@ func main() {
 		// Notifications Management
 		protectedRoutes.GET("/notifications", notifHandler.GetMyNotifications)
 		protectedRoutes.PUT("/notifications/:id/read", notifHandler.MarkAsRead)
+
+		// Analytics / Reports
+		protectedRoutes.GET("/reports/sales", analyticsHandler.GetSalesReport)
+		protectedRoutes.GET("/reports/top-products", analyticsHandler.GetTopProducts)
+		protectedRoutes.GET("/reports/shifts", analyticsHandler.GetShiftReports)
 	}
 
 	// 8. Daftarkan router dengan Optional Auth (untuk public route yang behavior-nya berubah jika login)

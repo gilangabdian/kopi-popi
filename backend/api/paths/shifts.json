@@ -21,10 +21,10 @@
     }
   },
   "close": {
-    "patch": {
+    "post": {
       "summary": "Close Shift",
       "tags": ["Shifts"],
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+      "security": [{"BearerAuth": []}],
       "requestBody": {
         "required": true,
         "content": {
