@@ -32,9 +32,9 @@ type Service interface {
 	Checkout(ctx context.Context, customerID *string, cashierID *string, req CheckoutRequest) (*Transaction, error)
 
 	// Transactions
-	GetTransactionByID(ctx context.Context, id string) (*Transaction, error)
-	GetMyTransactions(ctx context.Context, customerID string) ([]Transaction, error)
-	GetBranchTransactions(ctx context.Context, branchID int) ([]Transaction, error)
+	GetTransactions(ctx context.Context, role string, reqBranchID *int, reqCustomerID *string, status *string, startDate *string, endDate *string) ([]Transaction, error)
+	GetTransactionByID(ctx context.Context, id string, role string, reqBranchID *int, reqCustomerID *string) (*Transaction, error)
+	UpdateTransactionStatus(ctx context.Context, id string, status string, role string, reqBranchID *int) error
 }
 
 type service struct {
@@ -417,14 +417,75 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 	return transaction, nil
 }
 
-func (s *service) GetTransactionByID(ctx context.Context, id string) (*Transaction, error) {
-	return s.repo.GetTransactionByID(id)
+func (s *service) GetTransactions(ctx context.Context, role string, reqBranchID *int, reqCustomerID *string, status *string, startDate *string, endDate *string) ([]Transaction, error) {
+	var finalBranchID *int
+	var finalCustomerID *string
+
+	if role == "Customer" {
+		if reqCustomerID == nil {
+			return nil, errors.New("unauthorized: customer ID is required")
+		}
+		finalCustomerID = reqCustomerID
+	} else if role == "Cashier" || role == "Manager" {
+		if reqBranchID == nil {
+			return nil, errors.New("forbidden: employee must have a branch assigned")
+		}
+		finalBranchID = reqBranchID
+	} else if role == "Admin" || role == "ADMIN" {
+		finalBranchID = reqBranchID // Admin can pass branch filter explicitly
+		finalCustomerID = reqCustomerID
+	} else {
+		return nil, errors.New("unauthorized: invalid role")
+	}
+
+	return s.repo.GetTransactions(finalBranchID, finalCustomerID, status, startDate, endDate)
 }
 
-func (s *service) GetMyTransactions(ctx context.Context, customerID string) ([]Transaction, error) {
-	return s.repo.GetTransactionsByCustomer(customerID)
+func (s *service) GetTransactionByID(ctx context.Context, id string, role string, reqBranchID *int, reqCustomerID *string) (*Transaction, error) {
+	trx, err := s.repo.GetTransactionByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if trx == nil {
+		return nil, errors.New("not found: transaction not found")
+	}
+
+	// Otorisasi
+	if role == "Customer" {
+		if trx.CustomerID == nil || reqCustomerID == nil || *trx.CustomerID != *reqCustomerID {
+			return nil, errors.New("forbidden: not your transaction")
+		}
+	} else if role == "Cashier" || role == "Manager" {
+		if reqBranchID == nil || trx.BranchID != *reqBranchID {
+			return nil, errors.New("forbidden: transaction does not belong to your branch")
+		}
+	}
+
+	return trx, nil
 }
 
-func (s *service) GetBranchTransactions(ctx context.Context, branchID int) ([]Transaction, error) {
-	return s.repo.GetTransactionsByBranch(branchID)
+func (s *service) UpdateTransactionStatus(ctx context.Context, id string, status string, role string, reqBranchID *int) error {
+	if role == "Customer" {
+		return errors.New("forbidden: customers cannot update transaction status")
+	}
+
+	trx, err := s.repo.GetTransactionByID(id)
+	if err != nil {
+		return err
+	}
+	if trx == nil {
+		return errors.New("not found: transaction not found")
+	}
+
+	if (role == "Cashier" || role == "Manager") && (reqBranchID == nil || trx.BranchID != *reqBranchID) {
+		return errors.New("forbidden: transaction does not belong to your branch")
+	}
+
+	// Validasi Flow Status (Sederhana)
+	// Waiting_Payment -> Paid -> Preparing -> Ready -> Completed -> Cancelled
+	if trx.Status == "Completed" || trx.Status == "Cancelled" {
+		return errors.New("conflict: transaction is already finalized")
+	}
+
+	return s.repo.UpdateTransactionStatus(id, status)
 }

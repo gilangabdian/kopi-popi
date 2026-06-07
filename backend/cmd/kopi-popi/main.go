@@ -177,6 +177,10 @@ func main() {
 		protectedRoutes.GET("/carts/me", salesHandler.GetMyCart)
 
 		protectedRoutes.POST("/checkout", salesHandler.Checkout)
+		
+		protectedRoutes.GET("/transactions", salesHandler.GetTransactions)
+		protectedRoutes.GET("/transactions/:id", salesHandler.GetTransactionByID)
+		protectedRoutes.PATCH("/transactions/:id/status", salesHandler.UpdateTransactionStatus)
 
 		// Notifications Management
 		protectedRoutes.GET("/notifications", notifHandler.GetMyNotifications)

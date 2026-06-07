@@ -1574,15 +1574,49 @@
         }
       }
     },
-    "/transactions/me": {
+    "/transactions": {
       "get": {
-        "summary": "Get My Transactions (Customer)",
+        "summary": "Get Transactions (Supports Filters)",
         "tags": [
           "Sales"
         ],
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1668,6 +1702,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransactionStatusPayload"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "$ref": "#/components/responses/GenericSuccess"
@@ -2814,6 +2858,21 @@
               "$ref": "#/components/schemas/TransactionDetail"
             }
           }
+        }
+      },
+      "UpdateTransactionStatusPayload": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "Preparing"
+          }
+        },
+        "example": {
+          "status": "Preparing"
         }
       }
     },

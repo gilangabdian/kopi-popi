@@ -131,6 +131,16 @@
       "payment_method": "CASH",
       "amount_tendered": 50000
     }
+  },
+  "UpdateTransactionStatusPayload": {
+    "type": "object",
+    "required": ["status"],
+    "properties": {
+      "status": { "type": "string", "example": "Preparing" }
+    },
+    "example": {
+      "status": "Preparing"
+    }
   }
 }
 

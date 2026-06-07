@@ -134,8 +134,8 @@
     "/checkout": {
       "$ref": "./paths/sales.json#/transactions"
     },
-    "/transactions/me": {
-      "$ref": "./paths/sales.json#/transactions-me"
+    "/transactions": {
+      "$ref": "./paths/sales.json#/transactions-list"
     },
     "/transactions/{id}": {
       "$ref": "./paths/sales.json#/transaction-detail"

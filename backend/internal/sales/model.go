@@ -96,3 +96,7 @@ type CheckoutRequest struct {
 	CustomerName  *string `json:"customer_name,omitempty"` // Wajib diisi kasir (offline)
 	AmountTendered *float64 `json:"amount_tendered,omitempty"` // Khusus Cash, uang yang diberikan pelanggan (untuk kembalian - opsional)
 }
+
+type UpdateTransactionStatusPayload struct {
+	Status string `json:"status" binding:"required,oneof=Paid Preparing Ready Completed Cancelled"`
+}
