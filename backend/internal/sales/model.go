@@ -64,6 +64,8 @@ type Transaction struct {
 	PromoCode      *string             `json:"promo_code,omitempty"`
 	DiscountAmount float64             `json:"discount_amount"`
 	FinalAmount    float64             `json:"final_amount"`
+	PointsRedeemed int                 `json:"points_redeemed"`
+	PointsEarned   int                 `json:"points_earned"`
 	Status         string              `json:"status"` // Waiting_Payment, Paid, Preparing, Ready, Completed, Cancelled
 	CreatedAt     time.Time           `json:"created_at"`
 	UpdatedAt     time.Time           `json:"updated_at"`
@@ -98,7 +100,8 @@ type AddCartItemRequest struct {
 }
 
 type InitOfflineCartRequest struct {
-	CartName string `json:"cart_name" binding:"required"`
+	CartName   string  `json:"cart_name" binding:"required"`
+	CustomerID *string `json:"customer_id,omitempty"`
 }
 
 type CheckoutRequest struct {
@@ -108,6 +111,8 @@ type CheckoutRequest struct {
 	CustomerName   *string  `json:"customer_name,omitempty"` // Wajib diisi kasir (offline)
 	AmountTendered *float64 `json:"amount_tendered,omitempty"` // Khusus Cash, uang yang diberikan pelanggan (untuk kembalian - opsional)
 	PromoCode      *string  `json:"promo_code,omitempty"` // Kode Promo (opsional)
+	CustomerID     *string  `json:"customer_id,omitempty"` // ID pelanggan (opsional, untuk transaksi offline)
+	PointsToRedeem *int     `json:"points_to_redeem,omitempty"` // Poin yang ingin digunakan (opsional)
 }
 
 type UpdateTransactionStatusPayload struct {

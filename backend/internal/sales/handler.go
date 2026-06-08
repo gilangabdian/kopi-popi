@@ -250,11 +250,11 @@ func (h *Handler) AddItemToOfflineCart(c *gin.Context) {
 	response.Success(c, 200, "item added to offline cart")
 }
 
-// GetMyCart
+// GetMyCart (Customer Only)
 func (h *Handler) GetMyCart(c *gin.Context) {
 	role := c.GetString("role")
 	if role != "Customer" {
-		response.Error(c, 403, "forbidden")
+		response.Error(c, 403, "forbidden: this endpoint is only for customers")
 		return
 	}
 	userID := c.GetString("user_id")
@@ -262,6 +262,54 @@ func (h *Handler) GetMyCart(c *gin.Context) {
 	cart, err := h.service.GetMyCart(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, 400, err.Error())
+		return
+	}
+
+	response.Success(c, 200, cart)
+}
+
+// GetOfflineCarts (Cashier Only)
+func (h *Handler) GetOfflineCarts(c *gin.Context) {
+	role := c.GetString("role")
+	if role != "Cashier" {
+		response.Error(c, 403, "forbidden: this endpoint is only for cashiers")
+		return
+	}
+	branchIDFloat, _ := c.Get("branch_id")
+	branchID := int(branchIDFloat.(float64))
+
+	carts, err := h.service.GetOfflineCarts(c.Request.Context(), branchID)
+	if err != nil {
+		response.Error(c, 400, err.Error())
+		return
+	}
+
+	response.Success(c, 200, carts)
+}
+
+// GetCartByID (Cashier Only)
+func (h *Handler) GetCartByID(c *gin.Context) {
+	role := c.GetString("role")
+	if role != "Cashier" {
+		response.Error(c, 403, "forbidden: this endpoint is only for cashiers")
+		return
+	}
+	
+	cartID := c.Param("id")
+	branchIDFloat, _ := c.Get("branch_id")
+	branchID := int(branchIDFloat.(float64))
+
+	cart, err := h.service.GetCartByID(c.Request.Context(), cartID)
+	if err != nil {
+		response.Error(c, 400, err.Error())
+		return
+	}
+	if cart == nil {
+		response.Error(c, 404, "cart not found")
+		return
+	}
+	if cart.BranchID != branchID {
+		response.Error(c, 403, "forbidden: cart does not belong to your branch")
 		return
 	}
 

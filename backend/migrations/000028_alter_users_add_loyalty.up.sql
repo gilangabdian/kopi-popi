@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD COLUMN `loyalty_points` INT NOT NULL DEFAULT 0;

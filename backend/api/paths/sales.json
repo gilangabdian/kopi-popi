@@ -1,5 +1,28 @@
 {
-    "init-offline-cart": {
+  "offline-carts": {
+    "get": {
+      "summary": "Get Offline Carts (Cashier)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "../schemas/sales.json#/Cart" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "post": {
       "summary": "Init Offline Cart (Cashier)",
       "tags": ["Sales"],
@@ -74,6 +97,36 @@
       },
       "responses": {
         "200": { "$ref": "../responses/common.json#/GenericSuccess" }
+      }
+    }
+  },
+  "cart-detail": {
+    "get": {
+      "summary": "Get Cart By ID (Cashier)",
+      "tags": ["Sales"],
+      "security": [{"BearerAuth": []}],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "$ref": "../schemas/sales.json#/Cart" }
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

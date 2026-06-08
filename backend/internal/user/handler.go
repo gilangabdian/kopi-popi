@@ -203,3 +203,25 @@ func (h *Handler) DisableEmployee(c *gin.Context) {
 
 	response.Success(c, 200, "employee status toggled successfully")
 }
+
+// SearchCustomers
+func (h *Handler) SearchCustomers(c *gin.Context) {
+	query := c.Query("q")
+	if query == "" {
+		// Fallback for backwards compatibility
+		query = c.Query("phone")
+	}
+	
+	if query == "" {
+		response.Error(c, 400, "q or phone query parameter is required")
+		return
+	}
+
+	users, err := h.service.SearchCustomers(c.Request.Context(), query)
+	if err != nil {
+		response.Error(c, 500, err.Error())
+		return
+	}
+
+	response.Success(c, 200, users)
+}

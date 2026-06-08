@@ -27,6 +27,7 @@ type User struct {
 	Phone          *string   `json:"phone,omitempty"`
 	ProfilePicture string    `json:"profile_picture"`
 	IsActive       bool      `json:"is_active"`
+	LoyaltyPoints  int       `json:"loyalty_points"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
@@ -41,6 +42,7 @@ type UserResponse struct {
 	Phone          *string `json:"phone,omitempty"`
 	ProfilePicture string  `json:"profile_picture"`
 	IsActive       bool    `json:"is_active"`
+	LoyaltyPoints  int     `json:"loyalty_points"`
 }
 
 // UpdateProfileRequest DTO untuk /users/me

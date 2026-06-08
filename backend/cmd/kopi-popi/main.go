@@ -136,8 +136,9 @@ func main() {
 		protectedRoutes.POST("/users/me/request-email-otp", usersHandler.RequestEmailOTP)
 		protectedRoutes.PUT("/users/me/email", usersHandler.VerifyEmailOTP)
 
-		// Users Management(ADMIN)
+		// Users Management(ADMIN & CASHIER)
 		protectedRoutes.GET("/users", usersHandler.GetEmployees)
+		protectedRoutes.GET("/users/search", usersHandler.SearchCustomers)
 		protectedRoutes.POST("/users/managers", usersHandler.CreateManager)
 		protectedRoutes.POST("/users/cashiers", usersHandler.CreateCashier)
 		protectedRoutes.PATCH("/users/:id/disable", usersHandler.DisableEmployee)
@@ -186,9 +187,11 @@ func main() {
 		protectedRoutes.GET("/shifts/me/expenses", salesHandler.GetMyExpenses)
 
 		protectedRoutes.POST("/carts/offline", salesHandler.InitOfflineCart)
+		protectedRoutes.GET("/carts/offline", salesHandler.GetOfflineCarts)
 		protectedRoutes.POST("/carts/items", salesHandler.AddCartItem)
 		protectedRoutes.POST("/carts/:id/items", salesHandler.AddItemToOfflineCart)
 		protectedRoutes.GET("/carts/me", salesHandler.GetMyCart)
+		protectedRoutes.GET("/carts/:id", salesHandler.GetCartByID)
 
 		protectedRoutes.POST("/checkout", salesHandler.Checkout)
 		
