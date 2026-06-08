@@ -12,6 +12,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/branch"
 	"github.com/gilangages/kopi-popi/internal/catalog"
 	"github.com/gilangages/kopi-popi/internal/inventory"
+	"github.com/gilangages/kopi-popi/internal/promo"
 )
 
 // Mock Repo
@@ -165,9 +166,23 @@ func (m *MockInventoryService) DeductStock(tx interface{}, branchID int, materia
 	return args.Error(0)
 }
 
+// Mock Promo Service
+type MockPromoService struct {
+	mock.Mock
+}
+
+func (m *MockPromoService) CreatePromo(ctx context.Context, req promo.PromoRequest) error { return nil }
+func (m *MockPromoService) UpdatePromo(ctx context.Context, id int, req promo.PromoRequest) error { return nil }
+func (m *MockPromoService) GetPromos(ctx context.Context, role string) ([]promo.Promo, error) { return nil, nil }
+func (m *MockPromoService) ValidatePromo(ctx context.Context, code string, totalAmount float64) (*promo.ValidatePromoResponse, error) { return nil, nil }
+func (m *MockPromoService) CalculateDiscount(code string, totalAmount float64) (float64, float64, error) {
+	args := m.Called(code, totalAmount)
+	return args.Get(0).(float64), args.Get(1).(float64), args.Error(2)
+}
+
 func TestOpenShift_Success(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil, nil)
 	
 	cashierID := uuid.NewString()
 	mockRepo.On("GetOpenShiftByCashier", cashierID).Return(nil, nil)
@@ -184,7 +199,7 @@ func TestOpenShift_Success(t *testing.T) {
 
 func TestOpenShift_AlreadyOpen(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil, nil)
 	
 	cashierID := uuid.NewString()
 	mockRepo.On("GetOpenShiftByCashier", cashierID).Return(&Shift{Status: "Open"}, nil)
@@ -199,7 +214,7 @@ func TestOpenShift_AlreadyOpen(t *testing.T) {
 
 func TestInitOfflineCart(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil, nil)
 	
 	mockRepo.On("CreateCart", mock.AnythingOfType("*sales.Cart")).Return(nil)
 	
@@ -215,7 +230,7 @@ func TestInitOfflineCart(t *testing.T) {
 
 func TestAddItemToOfflineCart(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil, nil)
 	
 	cartID := uuid.NewString()
 	cartName := "Meja 2"
@@ -234,7 +249,7 @@ func TestAddItemToOfflineCart(t *testing.T) {
 
 func TestCheckout_EmptyCart(t *testing.T) {
 	mockRepo := new(MockRepository)
-	svc := NewService(mockRepo, nil, nil, nil, nil, nil)
+	svc := NewService(mockRepo, nil, nil, nil, nil, nil, nil)
 	
 	cartID := uuid.NewString()
 	customerID := uuid.NewString()

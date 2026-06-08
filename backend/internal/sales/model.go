@@ -58,10 +58,13 @@ type Transaction struct {
 	CustomerName  *string             `json:"customer_name,omitempty"`
 	CashierID     *string             `json:"cashier_id,omitempty"`
 	ShiftID       *string             `json:"shift_id,omitempty"`
-	OrderType     string              `json:"order_type"` // Online_Pickup, Offline_DineIn, Offline_Takeaway
-	PaymentMethod string              `json:"payment_method"` // "CASH", "QRIS", "DEBIT", dll
-	TotalAmount   float64             `json:"total_amount"`
-	Status        string              `json:"status"` // Waiting_Payment, Paid, Preparing, Ready, Completed, Cancelled
+	OrderType      string              `json:"order_type"` // Online_Pickup, Offline_DineIn, Offline_Takeaway
+	PaymentMethod  string              `json:"payment_method"` // "CASH", "QRIS", "DEBIT", dll
+	TotalAmount    float64             `json:"total_amount"`
+	PromoCode      *string             `json:"promo_code,omitempty"`
+	DiscountAmount float64             `json:"discount_amount"`
+	FinalAmount    float64             `json:"final_amount"`
+	Status         string              `json:"status"` // Waiting_Payment, Paid, Preparing, Ready, Completed, Cancelled
 	CreatedAt     time.Time           `json:"created_at"`
 	UpdatedAt     time.Time           `json:"updated_at"`
 	Details       []TransactionDetail `json:"details" gorm:"foreignKey:TransactionID"`
@@ -100,10 +103,11 @@ type InitOfflineCartRequest struct {
 
 type CheckoutRequest struct {
 	CartID        string  `json:"cart_id" binding:"required"`
-	OrderType     string  `json:"order_type" binding:"required"` // Online_Pickup, Offline_DineIn, Offline_Takeaway
-	PaymentMethod string  `json:"payment_method" binding:"required"` // CASH, QRIS, dll
-	CustomerName  *string `json:"customer_name,omitempty"` // Wajib diisi kasir (offline)
+	OrderType      string   `json:"order_type" binding:"required"` // Online_Pickup, Offline_DineIn, Offline_Takeaway
+	PaymentMethod  string   `json:"payment_method" binding:"required"` // CASH, QRIS, dll
+	CustomerName   *string  `json:"customer_name,omitempty"` // Wajib diisi kasir (offline)
 	AmountTendered *float64 `json:"amount_tendered,omitempty"` // Khusus Cash, uang yang diberikan pelanggan (untuk kembalian - opsional)
+	PromoCode      *string  `json:"promo_code,omitempty"` // Kode Promo (opsional)
 }
 
 type UpdateTransactionStatusPayload struct {
