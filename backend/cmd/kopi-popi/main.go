@@ -9,6 +9,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/media"
 	"github.com/gilangages/kopi-popi/internal/notification"
 	"github.com/gilangages/kopi-popi/internal/payment"
+	"github.com/gilangages/kopi-popi/internal/promo"
 	"github.com/gilangages/kopi-popi/internal/sales"
 	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/gilangages/kopi-popi/internal/analytics"
@@ -88,12 +89,17 @@ func main() {
 	paymentService := payment.NewService(paymentRepo, notifService)
 	paymentHandler := payment.NewHandler(paymentService)
 
-	// 5h. Inisialisasi Domain Sales
+	// 5h. Inisialisasi Domain Promo
+	promoRepo := promo.NewRepository(db)
+	promoService := promo.NewService(promoRepo)
+	promoHandler := promo.NewHandler(promoService)
+
+	// 5i. Inisialisasi Domain Sales
 	salesRepo := sales.NewRepository(db)
-	salesService := sales.NewService(salesRepo, branchesService, catalogService, inventoryService, notifService, usersService)
+	salesService := sales.NewService(salesRepo, branchesService, catalogService, inventoryService, notifService, usersService, promoService)
 	salesHandler := sales.NewHandler(salesService, paymentService)
 
-	// 5i. Inisialisasi Domain Analytics
+	// 5j. Inisialisasi Domain Analytics
 	analyticsRepo := analytics.NewRepository(db)
 	analyticsService := analytics.NewService(analyticsRepo)
 	analyticsHandler := analytics.NewHandler(analyticsService)
@@ -198,6 +204,12 @@ func main() {
 		protectedRoutes.GET("/reports/sales", analyticsHandler.GetSalesReport)
 		protectedRoutes.GET("/reports/top-products", analyticsHandler.GetTopProducts)
 		protectedRoutes.GET("/reports/shifts", analyticsHandler.GetShiftReports)
+
+		// Promos
+		protectedRoutes.GET("/promos", promoHandler.GetPromos)
+		protectedRoutes.POST("/promos", promoHandler.CreatePromo)
+		protectedRoutes.PUT("/promos/:id", promoHandler.UpdatePromo)
+		protectedRoutes.POST("/promos/validate", promoHandler.ValidatePromo)
 	}
 
 	// 8. Daftarkan router dengan Optional Auth (untuk public route yang behavior-nya berubah jika login)

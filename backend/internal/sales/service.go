@@ -9,6 +9,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/catalog"
 	"github.com/gilangages/kopi-popi/internal/inventory"
 	"github.com/gilangages/kopi-popi/internal/notification"
+	"github.com/gilangages/kopi-popi/internal/promo"
 	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -48,9 +49,10 @@ type service struct {
 	invSvc     inventory.Service
 	notifSvc   notification.Service
 	userSvc    user.Service
+	promoSvc   promo.Service
 }
 
-func NewService(repo Repository, branchSvc branch.Service, catalogSvc catalog.Service, invSvc inventory.Service, notifSvc notification.Service, userSvc user.Service) Service {
+func NewService(repo Repository, branchSvc branch.Service, catalogSvc catalog.Service, invSvc inventory.Service, notifSvc notification.Service, userSvc user.Service, promoSvc promo.Service) Service {
 	return &service{
 		repo:       repo,
 		branchSvc:  branchSvc,
@@ -58,6 +60,7 @@ func NewService(repo Repository, branchSvc branch.Service, catalogSvc catalog.Se
 		invSvc:     invSvc,
 		notifSvc:   notifSvc,
 		userSvc:    userSvc,
+		promoSvc:   promoSvc,
 	}
 }
 
@@ -359,10 +362,22 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 		})
 	}
 
+	// Hitung Promo Jika Ada
+	discountAmount := 0.0
+	finalAmount := totalAmount
+	if req.PromoCode != nil && *req.PromoCode != "" {
+		d, f, err := s.promoSvc.CalculateDiscount(*req.PromoCode, totalAmount)
+		if err != nil {
+			return nil, err
+		}
+		discountAmount = d
+		finalAmount = f
+	}
+
 	// Validasi Amount Tendered (Jika Cash)
 	if req.PaymentMethod == "CASH" {
-		if req.AmountTendered == nil || *req.AmountTendered < totalAmount {
-			return nil, errors.New("invalid: amount tendered is less than total amount")
+		if req.AmountTendered == nil || *req.AmountTendered < finalAmount {
+			return nil, errors.New("invalid: amount tendered is less than final amount")
 		}
 	}
 
@@ -372,19 +387,22 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 	}
 
 	transaction := &Transaction{
-		ID:            uuid.NewString(),
-		BranchID:      cart.BranchID,
-		CustomerID:    customerID,
-		CustomerName:  req.CustomerName,
-		CashierID:     cashierID,
-		ShiftID:       shiftID,
-		OrderType:     req.OrderType,
-		PaymentMethod: req.PaymentMethod,
-		TotalAmount:   totalAmount,
-		Status:        status,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		Details:       details,
+		ID:             uuid.NewString(),
+		BranchID:       cart.BranchID,
+		CustomerID:     customerID,
+		CustomerName:   req.CustomerName,
+		CashierID:      cashierID,
+		ShiftID:        shiftID,
+		OrderType:      req.OrderType,
+		PaymentMethod:  req.PaymentMethod,
+		TotalAmount:    totalAmount,
+		PromoCode:      req.PromoCode,
+		DiscountAmount: discountAmount,
+		FinalAmount:    finalAmount,
+		Status:         status,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Details:        details,
 	}
 
 	// 2. Jalankan DB Transaction: Create Transaksi, Hapus Cart,
@@ -414,7 +432,7 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 				if err := tx.First(&shift, "id = ?", *shiftID).Error; err != nil {
 					return err
 				}
-				shift.ExpectedCash += totalAmount
+				shift.ExpectedCash += finalAmount
 				if err := tx.Save(&shift).Error; err != nil {
 					return err
 				}

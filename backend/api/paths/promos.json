@@ -1,0 +1,227 @@
+{
+    "list": {
+        "get": {
+            "tags": [
+                "Promos"
+            ],
+            "summary": "Get Promos",
+            "description": "Get all promos (Admin) or active promos (others)",
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Success"
+                }
+            }
+        },
+        "post": {
+            "tags": [
+                "Promos"
+            ],
+            "summary": "Create Promo (Admin)",
+            "description": "Create a new promo code",
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string",
+                                    "example": "DISKON20"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "example": "Diskon Akhir Tahun 20%"
+                                },
+                                "discount_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "PERCENTAGE",
+                                        "FIXED"
+                                    ],
+                                    "example": "PERCENTAGE"
+                                },
+                                "discount_value": {
+                                    "type": "number",
+                                    "example": 20
+                                },
+                                "max_discount_amount": {
+                                    "type": "number",
+                                    "example": 15000
+                                },
+                                "min_purchase_amount": {
+                                    "type": "number",
+                                    "example": 50000
+                                },
+                                "valid_from": {
+                                    "type": "string",
+                                    "example": "2024-12-01T00:00:00Z"
+                                },
+                                "valid_until": {
+                                    "type": "string",
+                                    "example": "2024-12-31T23:59:59Z"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "Created"
+                }
+            }
+        }
+    },
+    "detail": {
+        "put": {
+            "tags": [
+                "Promos"
+            ],
+            "summary": "Update Promo (Admin)",
+            "description": "Update an existing promo code",
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "discount_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "PERCENTAGE",
+                                        "FIXED"
+                                    ]
+                                },
+                                "discount_value": {
+                                    "type": "number"
+                                },
+                                "max_discount_amount": {
+                                    "type": "number"
+                                },
+                                "min_purchase_amount": {
+                                    "type": "number"
+                                },
+                                "valid_from": {
+                                    "type": "string"
+                                },
+                                "valid_until": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Updated"
+                }
+            }
+        }
+    },
+    "validate": {
+        "post": {
+            "tags": [
+                "Promos"
+            ],
+            "summary": "Validate Promo Code",
+            "description": "Check if promo is valid and calculate discount",
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string",
+                                    "example": "DISKON20"
+                                },
+                                "total_amount": {
+                                    "type": "number",
+                                    "example": 100000
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Success",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "integer"
+                                    },
+                                    "data": {
+                                        "type": "object",
+                                        "properties": {
+                                            "is_valid": {
+                                                "type": "boolean",
+                                                "example": true
+                                            },
+                                            "discount_amount": {
+                                                "type": "number",
+                                                "example": 15000
+                                            },
+                                            "final_amount": {
+                                                "type": "number",
+                                                "example": 85000
+                                            },
+                                            "message": {
+                                                "type": "string",
+                                                "example": "Promo berhasil digunakan!"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

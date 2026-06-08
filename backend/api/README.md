@@ -31,6 +31,7 @@ Hingga saat ini, sistem *backend* telah memiliki implementasi penuh untuk domain
 8. **Notifications (`internal/notification`)**: Menangani *In-App Notifications* (Notifikasi web) dan *Email Notifications* Asynchronous via SMTP. Modul ini menjadi fondasi utama untuk pengiriman e-Receipt (Invoice), peringatan stok minimum, dan persetujuan Restock.
 9. **Payment (`internal/payment`)**: Integrasi Gateway Pembayaran menggunakan **Midtrans**. Modul ini memisahkan logika khusus pembayaran seperti Request Snap Token (URL Pembayaran) dan Webhook Handler untuk memproses callback dari Midtrans yang secara otomatis memotong stok dan mengubah status Transaksi.
 10. **Analytics (`internal/analytics`)**: Modul pelaporan dan *dashboard*. Berfungsi melakukan agregasi data untuk menghasilkan laporan pendapatan/penjualan (beserta rincian per metode pembayaran), produk paling laris (*top products*), serta rekap selisih uang kasir (*shifts report*).
+11. **Promo (`internal/promo`)**: Modul pemasaran (*marketing*) untuk pengelolaan kupon dan kode diskon tingkat transaksi (*cart-level*). Mendukung potongan harga berbentuk persentase (dilengkapi batas maksimum diskon) dan nominal tetap (*fixed*).
 
 ---
 

@@ -143,6 +143,15 @@
     "/transactions/{id}/status": {
       "$ref": "./paths/sales.json#/transaction-status"
     },
+    "/promos": {
+      "$ref": "./paths/promos.json#/list"
+    },
+    "/promos/{id}": {
+      "$ref": "./paths/promos.json#/detail"
+    },
+    "/promos/validate": {
+      "$ref": "./paths/promos.json#/validate"
+    },
     "/shifts/open": {
       "$ref": "./paths/shifts.json#/open"
     },
