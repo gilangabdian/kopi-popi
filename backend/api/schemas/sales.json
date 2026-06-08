@@ -63,6 +63,11 @@
       "order_type": { "type": "string", "example": "Online_Pickup" },
       "payment_method": { "type": "string", "example": "QRIS" },
       "total_amount": { "type": "number" },
+      "promo_code": { "type": "string" },
+      "discount_amount": { "type": "number" },
+      "final_amount": { "type": "number" },
+      "points_earned": { "type": "integer" },
+      "points_redeemed": { "type": "integer" },
       "status": { "type": "string", "example": "Paid" },
       "created_at": { "type": "string", "format": "date-time" },
       "updated_at": { "type": "string", "format": "date-time" },
@@ -96,7 +101,8 @@
     "type": "object",
     "required": ["cart_name"],
     "properties": {
-      "cart_name": { "type": "string", "example": "Meja 4 - Mas Baju Merah" }
+      "cart_name": { "type": "string", "example": "Meja 4 - Mas Baju Merah" },
+      "customer_id": { "type": "string", "format": "uuid" }
     },
     "example": {
       "cart_name": "Meja 4 - Mas Baju Merah"
@@ -123,7 +129,10 @@
       "cart_id": { "type": "string", "format": "uuid" },
       "order_type": { "type": "string", "example": "Online_Pickup" },
       "payment_method": { "type": "string", "example": "QRIS" },
-      "amount_tendered": { "type": "number", "example": 50000 }
+      "amount_tendered": { "type": "number", "example": 50000 },
+      "promo_code": { "type": "string", "example": "PROMO20" },
+      "customer_id": { "type": "string", "format": "uuid" },
+      "points_to_redeem": { "type": "integer", "example": 1000 }
     },
     "example": {
       "cart_id": "masukkan-uuid-cart-disini",

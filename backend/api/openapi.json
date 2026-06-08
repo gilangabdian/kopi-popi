@@ -47,6 +47,9 @@
     "/users": {
       "$ref": "./paths/users.json#/root"
     },
+    "/users/search": {
+      "$ref": "./paths/users.json#/search"
+    },
     "/users/me": {
       "$ref": "./paths/users.json#/me"
     },
@@ -120,13 +123,16 @@
       "$ref": "./paths/inventories.json#/branch-allocate"
     },
     "/carts/offline": {
-      "$ref": "./paths/sales.json#/init-offline-cart"
+      "$ref": "./paths/sales.json#/offline-carts"
     },
     "/carts/me": {
       "$ref": "./paths/sales.json#/carts"
     },
     "/carts/items": {
       "$ref": "./paths/sales.json#/cart-items"
+    },
+    "/carts/{id}": {
+      "$ref": "./paths/sales.json#/cart-detail"
     },
     "/carts/{id}/items": {
       "$ref": "./paths/sales.json#/cart-item-detail"

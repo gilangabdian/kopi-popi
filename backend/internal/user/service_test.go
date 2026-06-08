@@ -66,6 +66,19 @@ func (m *MockRepository) FindEmployeesByBranch(ctx context.Context, branchID int
 	return nil, args.Error(1)
 }
 
+func (m *MockRepository) SearchCustomers(ctx context.Context, query string) ([]User, error) {
+	args := m.Called(ctx, query)
+	if args.Get(0) != nil {
+		return args.Get(0).([]User), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockRepository) UpdateLoyaltyPoints(ctx context.Context, userID string, deltaPoints int) error {
+	args := m.Called(ctx, userID, deltaPoints)
+	return args.Error(0)
+}
+
 // --- PENGUJIAN PROFIL ---
 
 func TestGetMyProfile_Success(t *testing.T) {
@@ -325,5 +338,23 @@ func TestDisableEmployee_Success(t *testing.T) {
 	err := service.DisableEmployee(context.Background(), "emp-1")
 
 	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestSearchCustomers_Success(t *testing.T) {
+	mockRepo := new(MockRepository)
+	service := NewService(mockRepo)
+
+	mockUser := User{ID: "cust-1", Name: "Customer 1", LoyaltyPoints: 100}
+
+	mockRepo.On("SearchCustomers", mock.Anything, "08123").Return([]User{mockUser}, nil)
+
+	res, err := service.SearchCustomers(context.Background(), "08123")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res, 1)
+	assert.Equal(t, "cust-1", res[0].ID)
+	assert.Equal(t, 100, res[0].LoyaltyPoints)
 	mockRepo.AssertExpectations(t)
 }

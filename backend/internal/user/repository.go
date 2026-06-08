@@ -16,6 +16,8 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) error
 	FindAllEmployees(ctx context.Context) ([]User, error)
 	FindEmployeesByBranch(ctx context.Context, branchID int) ([]User, error)
+	SearchCustomers(ctx context.Context, query string) ([]User, error)
+	UpdateLoyaltyPoints(ctx context.Context, userID string, deltaPoints int) error
 }
 
 type userRepository struct {
@@ -90,4 +92,19 @@ func (r *userRepository) FindEmployeesByBranch(ctx context.Context, branchID int
 	// Jika mau menampilkan manager juga: Where("branch_id = ? AND role_id IN (2, 3)", branchID)
 	err := r.db.WithContext(ctx).Where("branch_id = ? AND role_id = 3", branchID).Find(&users).Error
 	return users, err
+}
+
+func (r *userRepository) SearchCustomers(ctx context.Context, query string) ([]User, error) {
+	var users []User
+	// Cari customer (role 4) berdasarkan nomor telepon persis ATAU nama mirip
+	err := r.db.WithContext(ctx).
+		Where("role_id = 4 AND (phone = ? OR name LIKE ?)", query, "%"+query+"%").
+		Find(&users).Error
+	return users, err
+}
+
+func (r *userRepository) UpdateLoyaltyPoints(ctx context.Context, userID string, deltaPoints int) error {
+	return r.db.WithContext(ctx).Model(&User{}).
+		Where("id = ?", userID).
+		UpdateColumn("loyalty_points", gorm.Expr("loyalty_points + ?", deltaPoints)).Error
 }

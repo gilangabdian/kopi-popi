@@ -21,6 +21,9 @@ type Service interface {
 	CreateCashier(ctx context.Context, managerBranchID int, req CreateCashierRequest) error
 	GetEmployees(ctx context.Context, role string, branchID *int) ([]UserResponse, error)
 	DisableEmployee(ctx context.Context, employeeID string) error
+
+	SearchCustomers(ctx context.Context, query string) ([]UserResponse, error)
+	UpdateLoyaltyPoints(ctx context.Context, userID string, deltaPoints int) error
 }
 
 type userService struct {
@@ -49,6 +52,7 @@ func (s *userService) GetMyProfile(ctx context.Context, userID string) (*UserRes
 		Phone:          user.Phone,
 		ProfilePicture: user.ProfilePicture,
 		IsActive:       user.IsActive,
+		LoyaltyPoints:  user.LoyaltyPoints,
 	}, nil
 }
 
@@ -269,4 +273,32 @@ func (s *userService) DisableEmployee(ctx context.Context, employeeID string) er
 	// Toggle IsActive (jika tadinya true jadi false, jika false jadi true)
 	user.IsActive = !user.IsActive
 	return s.repo.Update(ctx, user)
+}
+
+func (s *userService) SearchCustomers(ctx context.Context, query string) ([]UserResponse, error) {
+	users, err := s.repo.SearchCustomers(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	
+	var responses []UserResponse
+	for _, user := range users {
+		responses = append(responses, UserResponse{
+			ID:             user.ID,
+			RoleID:         user.RoleID,
+			BranchID:       user.BranchID,
+			Name:           user.Name,
+			Email:          user.Email,
+			Phone:          user.Phone,
+			ProfilePicture: user.ProfilePicture,
+			IsActive:       user.IsActive,
+			LoyaltyPoints:  user.LoyaltyPoints,
+		})
+	}
+
+	return responses, nil
+}
+
+func (s *userService) UpdateLoyaltyPoints(ctx context.Context, userID string, deltaPoints int) error {
+	return s.repo.UpdateLoyaltyPoints(ctx, userID, deltaPoints)
 }

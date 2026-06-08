@@ -208,5 +208,41 @@
         "200": { "$ref": "../responses/common.json#/GenericSuccess" }
       }
     }
+  },
+  "search": {
+    "get": {
+      "summary": "Search Customer by Name or Phone",
+      "description": "Find a customer by name or phone number (for offline points redemption).",
+      "tags": ["Employees"],
+      "parameters": [
+        {
+          "name": "q",
+          "in": "query",
+          "required": true,
+          "description": "Phone number or customer name to search",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "../schemas/common.json#/User" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

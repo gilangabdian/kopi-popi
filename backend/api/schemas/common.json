@@ -21,7 +21,8 @@
       "email": { "type": "string", "format": "email" },
       "phone": { "type": "string" },
       "role": { "type": "string" },
-      "profile_picture": { "type": "string" }
+      "profile_picture": { "type": "string" },
+      "loyalty_points": { "type": "integer" }
     }
   },
   "Product": {

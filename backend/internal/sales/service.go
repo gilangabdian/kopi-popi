@@ -31,6 +31,7 @@ type Service interface {
 	AddItemToOfflineCart(ctx context.Context, cartID string, branchID int, req AddCartItemRequest) error
 	GetMyCart(ctx context.Context, customerID string) (*Cart, error)
 	GetOfflineCarts(ctx context.Context, branchID int) ([]Cart, error)
+	GetCartByID(ctx context.Context, cartID string) (*Cart, error)
 	ClearCart(ctx context.Context, cartID string) error
 
 	// Checkout
@@ -251,11 +252,12 @@ func (s *service) AddCartItem(ctx context.Context, customerID *string, branchID 
 
 func (s *service) InitOfflineCart(ctx context.Context, branchID int, req InitOfflineCartRequest) (*Cart, error) {
 	cart := &Cart{
-		ID:        uuid.NewString(),
-		CartName:  &req.CartName,
-		BranchID:  branchID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:         uuid.NewString(),
+		CartName:   &req.CartName,
+		BranchID:   branchID,
+		CustomerID: req.CustomerID,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 	if err := s.repo.CreateCart(cart); err != nil {
 		return nil, err
@@ -274,8 +276,8 @@ func (s *service) AddItemToOfflineCart(ctx context.Context, cartID string, branc
 	if cart.BranchID != branchID {
 		return errors.New("forbidden: cart does not belong to your branch")
 	}
-	if cart.CustomerID != nil {
-		return errors.New("invalid: this cart belongs to a customer, not an offline hold bill")
+	if cart.CartName == nil || *cart.CartName == "" {
+		return errors.New("invalid: this cart belongs to an online customer, not an offline hold bill")
 	}
 
 	item := &CartItem{
@@ -295,6 +297,10 @@ func (s *service) GetOfflineCarts(ctx context.Context, branchID int) ([]Cart, er
 	return s.repo.GetActiveCartsByBranch(branchID)
 }
 
+func (s *service) GetCartByID(ctx context.Context, cartID string) (*Cart, error) {
+	return s.repo.GetCartByID(cartID)
+}
+
 func (s *service) ClearCart(ctx context.Context, cartID string) error {
 	return s.repo.ClearCartItems(cartID)
 }
@@ -310,9 +316,14 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 		return nil, errors.New("not found: cart not found")
 	}
 
-	// Otorisasi: kalau customerID ada, harus match dengan cart.customerID
+	var finalCustomerID *string = cart.CustomerID
+	if req.CustomerID != nil {
+		finalCustomerID = req.CustomerID
+	}
+
+	// Otorisasi: kalau customerID ada, harus match dengan finalCustomerID
 	if customerID != nil {
-		if cart.CustomerID == nil || *cart.CustomerID != *customerID {
+		if finalCustomerID == nil || *finalCustomerID != *customerID {
 			return nil, errors.New("forbidden: not your cart")
 		}
 	}
@@ -374,6 +385,35 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 		finalAmount = f
 	}
 
+	// Hitung Poin yang Direderm
+	pointsToRedeem := 0
+	if req.PointsToRedeem != nil && *req.PointsToRedeem > 0 {
+		if finalCustomerID == nil {
+			return nil, errors.New("invalid: cannot redeem points without a customer ID")
+		}
+		// Cek saldo poin
+		userProf, err := s.userSvc.GetMyProfile(ctx, *finalCustomerID)
+		if err != nil {
+			return nil, err
+		}
+		if userProf.LoyaltyPoints < *req.PointsToRedeem {
+			return nil, errors.New("invalid: insufficient loyalty points")
+		}
+		pointsToRedeem = *req.PointsToRedeem
+		
+		// finalAmount tidak boleh minus
+		if float64(pointsToRedeem) > finalAmount {
+			pointsToRedeem = int(finalAmount)
+		}
+		finalAmount -= float64(pointsToRedeem)
+	}
+
+	// Hitung Poin yang Didapat (5% dari finalAmount yang dibayar dengan uang)
+	pointsEarned := 0
+	if finalCustomerID != nil {
+		pointsEarned = int(finalAmount * 0.05)
+	}
+
 	// Validasi Amount Tendered (Jika Cash)
 	if req.PaymentMethod == "CASH" {
 		if req.AmountTendered == nil || *req.AmountTendered < finalAmount {
@@ -389,7 +429,7 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 	transaction := &Transaction{
 		ID:             uuid.NewString(),
 		BranchID:       cart.BranchID,
-		CustomerID:     customerID,
+		CustomerID:     finalCustomerID,
 		CustomerName:   req.CustomerName,
 		CashierID:      cashierID,
 		ShiftID:        shiftID,
@@ -399,6 +439,8 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 		PromoCode:      req.PromoCode,
 		DiscountAmount: discountAmount,
 		FinalAmount:    finalAmount,
+		PointsRedeemed: pointsToRedeem,
+		PointsEarned:   pointsEarned,
 		Status:         status,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -445,6 +487,20 @@ func (s *service) Checkout(ctx context.Context, customerID *string, cashierID *s
 		}
 		if err := tx.Delete(&Cart{}, "id = ?", cart.ID).Error; err != nil {
 			return err
+		}
+
+		// e. Kurangi poin jika ada
+		if pointsToRedeem > 0 && finalCustomerID != nil {
+			if err := tx.Exec("UPDATE users SET loyalty_points = loyalty_points - ? WHERE id = ?", pointsToRedeem, *finalCustomerID).Error; err != nil {
+				return err
+			}
+		}
+
+		// f. Tambah poin jika langsung Paid
+		if status == "Paid" && pointsEarned > 0 && finalCustomerID != nil {
+			if err := tx.Exec("UPDATE users SET loyalty_points = loyalty_points + ? WHERE id = ?", pointsEarned, *finalCustomerID).Error; err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -544,5 +600,20 @@ func (s *service) UpdateTransactionStatus(ctx context.Context, id string, status
 		return errors.New("conflict: transaction is already finalized")
 	}
 
-	return s.repo.UpdateTransactionStatus(id, status)
+	if err := s.repo.UpdateTransactionStatus(id, status); err != nil {
+		return err
+	}
+
+	// Jika status berubah menjadi Paid, berikan poin kepada pelanggan (jika ada)
+	// (Untuk Online Payment lewat Webhook, atau Manual via Kasir)
+	if status == "Paid" && trx.Status != "Paid" {
+		if trx.CustomerID != nil && trx.PointsEarned > 0 {
+			if err := s.userSvc.UpdateLoyaltyPoints(ctx, *trx.CustomerID, trx.PointsEarned); err != nil {
+				// Cukup di-log saja agar tidak menggagalkan update status
+				// log.Printf("Failed to update loyalty points for user %s: %v", *trx.CustomerID, err)
+			}
+		}
+	}
+
+	return nil
 }
