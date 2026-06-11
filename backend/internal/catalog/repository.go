@@ -10,6 +10,8 @@ type Repository interface {
 	// Category
 	FindAllCategories(ctx context.Context) ([]Category, error)
 	FindCategoryByID(ctx context.Context, id int) (*Category, error)
+	FindCategoryByIDOrSlug(ctx context.Context, idOrSlug string) (*Category, error)
+	CheckCategorySlugExists(ctx context.Context, slug string) (bool, error)
 	CreateCategory(ctx context.Context, category *Category) error
 	UpdateCategory(ctx context.Context, category *Category) error
 	DeleteCategory(ctx context.Context, id int) error
@@ -24,6 +26,8 @@ type Repository interface {
 	// Product
 	FindAllProducts(ctx context.Context, categoryID *int, search string) ([]Product, error)
 	FindProductByID(ctx context.Context, id int) (*Product, error)
+	FindProductByIDOrSlug(ctx context.Context, idOrSlug string) (*Product, error)
+	CheckProductSlugExists(ctx context.Context, slug string) (bool, error)
 	CreateProductWithBOM(ctx context.Context, product *Product, boms []ProductBOM) error
 	UpdateProductWithBOM(ctx context.Context, product *Product, boms []ProductBOM) error
 	SoftDeleteProduct(ctx context.Context, id int) error
@@ -54,6 +58,24 @@ func (r *repository) FindCategoryByID(ctx context.Context, id int) (*Category, e
 		return nil, err
 	}
 	return &category, nil
+}
+
+func (r *repository) FindCategoryByIDOrSlug(ctx context.Context, idOrSlug string) (*Category, error) {
+	var category Category
+	err := r.db.WithContext(ctx).Where("id = ? OR slug = ?", idOrSlug, idOrSlug).First(&category).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &category, nil
+}
+
+func (r *repository) CheckCategorySlugExists(ctx context.Context, slug string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&Category{}).Where("slug = ?", slug).Count(&count).Error
+	return count > 0, err
 }
 
 func (r *repository) CreateCategory(ctx context.Context, category *Category) error {
@@ -126,6 +148,24 @@ func (r *repository) FindProductByID(ctx context.Context, id int) (*Product, err
 		return nil, err
 	}
 	return &product, nil
+}
+
+func (r *repository) FindProductByIDOrSlug(ctx context.Context, idOrSlug string) (*Product, error) {
+	var product Product
+	err := r.db.WithContext(ctx).Preload("Recipe").Where("id = ? OR slug = ?", idOrSlug, idOrSlug).First(&product).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &product, nil
+}
+
+func (r *repository) CheckProductSlugExists(ctx context.Context, slug string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&Product{}).Where("slug = ?", slug).Count(&count).Error
+	return count > 0, err
 }
 
 func (r *repository) CreateProductWithBOM(ctx context.Context, product *Product, boms []ProductBOM) error {

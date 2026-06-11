@@ -10,6 +10,8 @@ type Repository interface {
 	CreatePromo(promo *Promo) error
 	UpdatePromo(promo *Promo) error
 	GetPromoByID(id int) (*Promo, error)
+	GetPromoByIDOrSlug(idOrSlug string) (*Promo, error)
+	CheckSlugExists(slug string) (bool, error)
 	GetPromoByCode(code string) (*Promo, error)
 	GetActivePromos() ([]Promo, error)
 	GetAllPromos() ([]Promo, error)
@@ -41,6 +43,27 @@ func (r *repository) GetPromoByID(id int) (*Promo, error) {
 		return nil, err
 	}
 	return &promo, nil
+}
+
+func (r *repository) GetPromoByIDOrSlug(idOrSlug string) (*Promo, error) {
+	var promo Promo
+	err := r.db.Where("id = ? OR slug = ?", idOrSlug, idOrSlug).First(&promo).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("promo not found")
+		}
+		return nil, err
+	}
+	return &promo, nil
+}
+
+func (r *repository) CheckSlugExists(slug string) (bool, error) {
+	var count int64
+	err := r.db.Model(&Promo{}).Where("slug = ?", slug).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *repository) GetPromoByCode(code string) (*Promo, error) {

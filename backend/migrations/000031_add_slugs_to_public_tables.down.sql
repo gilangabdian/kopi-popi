@@ -1,0 +1,5 @@
+ALTER TABLE blogs DROP COLUMN slug;
+ALTER TABLE products DROP COLUMN slug;
+ALTER TABLE categories DROP COLUMN slug;
+ALTER TABLE promos DROP COLUMN slug;
+ALTER TABLE branches DROP COLUMN slug;

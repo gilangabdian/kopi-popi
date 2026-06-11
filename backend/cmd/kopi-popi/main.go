@@ -13,6 +13,7 @@ import (
 	"github.com/gilangages/kopi-popi/internal/sales"
 	"github.com/gilangages/kopi-popi/internal/user"
 	"github.com/gilangages/kopi-popi/internal/analytics"
+	"github.com/gilangages/kopi-popi/internal/blogs"
 	"github.com/gilangages/kopi-popi/pkg/middleware"
 	"github.com/gilangages/kopi-popi/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -104,6 +105,11 @@ func main() {
 	analyticsService := analytics.NewService(analyticsRepo)
 	analyticsHandler := analytics.NewHandler(analyticsService)
 
+	// 5k. Inisialisasi Domain Blogs
+	blogsRepo := blogs.NewRepository(db)
+	blogsService := blogs.NewService(blogsRepo)
+	blogsHandler := blogs.NewHandler(blogsService)
+
 	// 6. Daftarkan router per-domain (Public)
 	authRoutes := r.Group("/auth")
 	{
@@ -118,6 +124,10 @@ func main() {
 	// Webhook Midtrans (Public)
 	r.POST("/payment/midtrans/webhook", paymentHandler.MidtransWebhook)
 
+	// Blogs (Public)
+	r.GET("/blogs", blogsHandler.GetBlogs)
+	r.GET("/blogs/:id", blogsHandler.GetBlogByID)
+
 	// 7. Expose Static Folder (Supaya gambar bisa diakses publik)
 	r.Static("/uploads", "./uploads")
 
@@ -127,6 +137,11 @@ func main() {
 	{
 		// Upload File
 		protectedRoutes.POST("/uploads", mediaHandler.UploadFile)
+
+		// Blogs Management
+		protectedRoutes.POST("/blogs", blogsHandler.CreateBlog)
+		protectedRoutes.PUT("/blogs/:id", blogsHandler.UpdateBlog)
+		protectedRoutes.DELETE("/blogs/:id", blogsHandler.DeleteBlog)
 
 		// Users Profile
 		protectedRoutes.GET("/users/me", usersHandler.GetMyProfile)

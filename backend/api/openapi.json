@@ -190,6 +190,12 @@
     },
     "/reports/shifts": {
       "$ref": "./paths/reports.json#/shifts"
+    },
+    "/blogs": {
+      "$ref": "./paths/blogs.json#/blogs"
+    },
+    "/blogs/{id}": {
+      "$ref": "./paths/blogs.json#/blog-detail"
     }
   }
 }

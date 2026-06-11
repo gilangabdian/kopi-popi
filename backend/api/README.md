@@ -32,6 +32,7 @@ Hingga saat ini, sistem *backend* telah memiliki implementasi penuh untuk domain
 9. **Payment (`internal/payment`)**: Integrasi Gateway Pembayaran menggunakan **Midtrans**. Modul ini memisahkan logika khusus pembayaran seperti Request Snap Token (URL Pembayaran) dan Webhook Handler untuk memproses callback dari Midtrans yang secara otomatis memotong stok dan mengubah status Transaksi.
 10. **Analytics (`internal/analytics`)**: Modul pelaporan dan *dashboard*. Berfungsi melakukan agregasi data untuk menghasilkan laporan pendapatan/penjualan (beserta rincian per metode pembayaran), produk paling laris (*top products*), serta rekap selisih uang kasir (*shifts report*).
 11. **Promo (`internal/promo`)**: Modul pemasaran (*marketing*) untuk pengelolaan kupon dan kode diskon tingkat transaksi (*cart-level*). Mendukung potongan harga berbentuk persentase (dilengkapi batas maksimum diskon) dan nominal tetap (*fixed*).
+12. **Blogs (`internal/blogs`)**: Modul konten manajemen untuk membuat dan mengelola artikel/blog, lengkap dengan kalkulasi estimasi waktu baca otomatis.
 
 ---
 

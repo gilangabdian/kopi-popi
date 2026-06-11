@@ -6,6 +6,7 @@ import "time"
 type Branch struct {
 	ID                int       `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name              string    `json:"name"`
+	Slug              string    `json:"slug" gorm:"unique"`
 	Address           string    `json:"address"`
 	IsActive          bool      `json:"is_active"`
 	OpeningTime       *string   `json:"opening_time"`

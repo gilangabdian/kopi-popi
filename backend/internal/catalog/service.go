@@ -3,12 +3,16 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/gosimple/slug"
 )
 
 type Service interface {
 	// Category
 	GetAllCategories(ctx context.Context) ([]Category, error)
+	GetCategoryByIDOrSlug(ctx context.Context, idOrSlug string) (*Category, error)
 	CreateCategory(ctx context.Context, req CategoryRequest) error
 	UpdateCategory(ctx context.Context, id int, req CategoryRequest) error
 	DeleteCategory(ctx context.Context, id int) error
@@ -21,7 +25,7 @@ type Service interface {
 
 	// Product
 	GetAllProducts(ctx context.Context, categoryID *int, search string) ([]Product, error)
-	GetProductDetail(ctx context.Context, id int, role string, includeRecipe bool) (*Product, error)
+	GetProductDetail(ctx context.Context, idOrSlug string, role string, includeRecipe bool) (*Product, error)
 	GetProductsBOM(ctx context.Context, productIDs []int) (map[int][]ProductBOM, error)
 	CreateProduct(ctx context.Context, req ProductRequest) error
 	UpdateProduct(ctx context.Context, id int, req ProductRequest) error
@@ -37,6 +41,29 @@ func NewService(repo Repository) Service {
 }
 
 // -- Category --
+func (s *service) generateUniqueCategorySlug(ctx context.Context, name string, currentID int) (string, error) {
+	baseSlug := slug.Make(name)
+	finalSlug := baseSlug
+	counter := 1
+
+	for {
+		exists, err := s.repo.CheckCategorySlugExists(ctx, finalSlug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			break
+		}
+		existingCat, _ := s.repo.FindCategoryByIDOrSlug(ctx, finalSlug)
+		if existingCat != nil && existingCat.ID == currentID {
+			break
+		}
+		finalSlug = fmt.Sprintf("%s-%d", baseSlug, counter)
+		counter++
+	}
+	return finalSlug, nil
+}
+
 func (s *service) GetAllCategories(ctx context.Context) ([]Category, error) {
 	categories, err := s.repo.FindAllCategories(ctx)
 	if err != nil {
@@ -48,8 +75,16 @@ func (s *service) GetAllCategories(ctx context.Context) ([]Category, error) {
 	return categories, nil
 }
 
+func (s *service) GetCategoryByIDOrSlug(ctx context.Context, idOrSlug string) (*Category, error) {
+	return s.repo.FindCategoryByIDOrSlug(ctx, idOrSlug)
+}
+
 func (s *service) CreateCategory(ctx context.Context, req CategoryRequest) error {
-	cat := &Category{Name: req.Name}
+	finalSlug, err := s.generateUniqueCategorySlug(ctx, req.Name, 0)
+	if err != nil {
+		return err
+	}
+	cat := &Category{Name: req.Name, Slug: finalSlug}
 	return s.repo.CreateCategory(ctx, cat)
 }
 
@@ -61,7 +96,14 @@ func (s *service) UpdateCategory(ctx context.Context, id int, req CategoryReques
 	if cat == nil {
 		return errors.New("category not found")
 	}
+
+	finalSlug, err := s.generateUniqueCategorySlug(ctx, req.Name, cat.ID)
+	if err != nil {
+		return err
+	}
+
 	cat.Name = req.Name
+	cat.Slug = finalSlug
 	return s.repo.UpdateCategory(ctx, cat)
 }
 
@@ -124,6 +166,29 @@ func (s *service) DeleteMaterial(ctx context.Context, id int) error {
 }
 
 // -- Product --
+func (s *service) generateUniqueProductSlug(ctx context.Context, name string, currentID int) (string, error) {
+	baseSlug := slug.Make(name)
+	finalSlug := baseSlug
+	counter := 1
+
+	for {
+		exists, err := s.repo.CheckProductSlugExists(ctx, finalSlug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			break
+		}
+		existingProd, _ := s.repo.FindProductByIDOrSlug(ctx, finalSlug)
+		if existingProd != nil && existingProd.ID == currentID {
+			break
+		}
+		finalSlug = fmt.Sprintf("%s-%d", baseSlug, counter)
+		counter++
+	}
+	return finalSlug, nil
+}
+
 func (s *service) GetAllProducts(ctx context.Context, categoryID *int, search string) ([]Product, error) {
 	products, err := s.repo.FindAllProducts(ctx, categoryID, search)
 	if err != nil {
@@ -139,8 +204,8 @@ func (s *service) GetAllProducts(ctx context.Context, categoryID *int, search st
 	return products, nil
 }
 
-func (s *service) GetProductDetail(ctx context.Context, id int, role string, includeRecipe bool) (*Product, error) {
-	product, err := s.repo.FindProductByID(ctx, id)
+func (s *service) GetProductDetail(ctx context.Context, idOrSlug string, role string, includeRecipe bool) (*Product, error) {
+	product, err := s.repo.FindProductByIDOrSlug(ctx, idOrSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -173,14 +238,20 @@ func (s *service) GetProductsBOM(ctx context.Context, productIDs []int) (map[int
 			result[pid] = []ProductBOM{}
 		}
 	}
-	
+
 	return result, nil
 }
 
 func (s *service) CreateProduct(ctx context.Context, req ProductRequest) error {
+	finalSlug, err := s.generateUniqueProductSlug(ctx, req.Name, 0)
+	if err != nil {
+		return err
+	}
+
 	product := &Product{
 		CategoryID:  req.CategoryID,
 		Name:        req.Name,
+		Slug:        finalSlug,
 		Description: req.Description,
 		Price:       req.Price,
 		ImageURL:    req.ImageURL,
@@ -213,8 +284,14 @@ func (s *service) UpdateProduct(ctx context.Context, id int, req ProductRequest)
 		return errors.New("product not found")
 	}
 
+	finalSlug, err := s.generateUniqueProductSlug(ctx, req.Name, product.ID)
+	if err != nil {
+		return err
+	}
+
 	product.CategoryID = req.CategoryID
 	product.Name = req.Name
+	product.Slug = finalSlug
 	product.Description = req.Description
 	product.Price = req.Price
 	product.ImageURL = req.ImageURL

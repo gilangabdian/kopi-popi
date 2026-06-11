@@ -29,6 +29,19 @@ func (m *MockRepository) FindByID(ctx context.Context, id int) (*Branch, error) 
 	return nil, args.Error(1)
 }
 
+func (m *MockRepository) FindByIDOrSlug(ctx context.Context, idOrSlug string) (*Branch, error) {
+	args := m.Called(ctx, idOrSlug)
+	if args.Get(0) != nil {
+		return args.Get(0).(*Branch), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockRepository) CheckSlugExists(ctx context.Context, slug string) (bool, error) {
+	args := m.Called(ctx, slug)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockRepository) Create(ctx context.Context, branch *Branch) error {
 	args := m.Called(ctx, branch)
 	return args.Error(0)
@@ -75,6 +88,7 @@ func TestCreateBranch_Success(t *testing.T) {
 	
 	req := CreateBranchRequest{Name: "Cabang Test", Address: "Jalan Test"}
 	
+	mockRepo.On("CheckSlugExists", mock.Anything, mock.Anything).Return(false, nil)
 	mockRepo.On("Create", mock.Anything, mock.MatchedBy(func(b *Branch) bool {
 		return b.Name == "Cabang Test" && b.Address == "Jalan Test" && b.IsActive == true
 	})).Return(nil)
@@ -94,6 +108,7 @@ func TestUpdateBranch_Success(t *testing.T) {
 	newName := "Baru"
 	req := UpdateBranchRequest{Name: &newName}
 	
+	mockRepo.On("CheckSlugExists", mock.Anything, mock.Anything).Return(false, nil)
 	mockRepo.On("FindByID", mock.Anything, 1).Return(existingBranch, nil)
 	mockRepo.On("Update", mock.Anything, mock.MatchedBy(func(b *Branch) bool {
 		return b.Name == "Baru" && b.Address == "Alamat Lama"

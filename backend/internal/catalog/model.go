@@ -7,6 +7,7 @@ import "time"
 type Category struct {
 	ID   int    `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name string `json:"name" gorm:"unique"`
+	Slug string `json:"slug" gorm:"unique"`
 }
 
 type Material struct {
@@ -21,6 +22,7 @@ type Product struct {
 	ID          int       `json:"id" gorm:"primaryKey;autoIncrement"`
 	CategoryID  int       `json:"category_id"`
 	Name        string    `json:"name"`
+	Slug        string    `json:"slug" gorm:"unique"`
 	Description *string   `json:"description"`
 	Price       float64   `json:"price"`
 	ImageURL    *string   `json:"image_url"`
