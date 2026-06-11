@@ -23,11 +23,25 @@ func (m *MockRepository) UpdatePromo(promo *Promo) error {
 }
 func (m *MockRepository) GetPromoByID(id int) (*Promo, error) {
 	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+	if args.Get(0) != nil {
+		return args.Get(0).(*Promo), args.Error(1)
 	}
-	return args.Get(0).(*Promo), args.Error(1)
+	return nil, args.Error(1)
 }
+
+func (m *MockRepository) GetPromoByIDOrSlug(idOrSlug string) (*Promo, error) {
+	args := m.Called(idOrSlug)
+	if args.Get(0) != nil {
+		return args.Get(0).(*Promo), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockRepository) CheckSlugExists(slug string) (bool, error) {
+	args := m.Called(slug)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockRepository) GetPromoByCode(code string) (*Promo, error) {
 	args := m.Called(code)
 	if args.Get(0) == nil {

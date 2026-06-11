@@ -189,7 +189,7 @@
       "description": "Includes Recipe (BOM) only if requester is Admin or Manager and adds ?include_recipe=true.",
       "tags": ["Catalogues"],
       "parameters": [
-        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "description": "ID or Slug" } },
         { "name": "include_recipe", "in": "query", "required": false, "schema": { "type": "boolean" } }
       ],
       "responses": {

@@ -54,5 +54,18 @@ services:
     depends_on:
       - mysql_db
 
+  # 4. Service Migrator (Otomasi eksekusi migrasi saat docker up)
+  migrator:
+    image: migrate/migrate:v4.18.1
+    container_name: kopi_popi_migrator
+    volumes:
+      - ./backend/migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=mysql://root:root@tcp(mysql_db:3306)/kopi_popi
+      - up
+    depends_on:
+      - mysql_db
+
 volumes:
   mysql_data:

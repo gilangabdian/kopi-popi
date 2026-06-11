@@ -3,11 +3,15 @@ package branch
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/gosimple/slug"
 )
 
 type Service interface {
 	GetAllBranches(ctx context.Context, role string, includeInactive bool) ([]Branch, error)
+	GetBranchByIDOrSlug(ctx context.Context, idOrSlug string) (*Branch, error)
 	CreateBranch(ctx context.Context, req CreateBranchRequest) error
 	UpdateBranch(ctx context.Context, id int, req UpdateBranchRequest) error
 	DeleteBranch(ctx context.Context, id int) error
@@ -28,29 +32,62 @@ func (s *service) GetAllBranches(ctx context.Context, role string, includeInacti
 	if role != "Admin" {
 		includeInactive = false
 	}
-	
+
 	branches, err := s.repo.FindAll(ctx, includeInactive)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if branches == nil {
 		branches = []Branch{}
 	}
-	
+
 	return branches, nil
 }
 
+func (s *service) generateUniqueSlug(ctx context.Context, name string, currentID int) (string, error) {
+	baseSlug := slug.Make(name)
+	finalSlug := baseSlug
+	counter := 1
+
+	for {
+		exists, err := s.repo.CheckSlugExists(ctx, finalSlug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			break
+		}
+		existingBranch, _ := s.repo.FindByIDOrSlug(ctx, finalSlug)
+		if existingBranch != nil && existingBranch.ID == currentID {
+			break
+		}
+		finalSlug = fmt.Sprintf("%s-%d", baseSlug, counter)
+		counter++
+	}
+	return finalSlug, nil
+}
+
+func (s *service) GetBranchByIDOrSlug(ctx context.Context, idOrSlug string) (*Branch, error) {
+	return s.repo.FindByIDOrSlug(ctx, idOrSlug)
+}
+
 func (s *service) CreateBranch(ctx context.Context, req CreateBranchRequest) error {
+	finalSlug, err := s.generateUniqueSlug(ctx, req.Name, 0)
+	if err != nil {
+		return err
+	}
+
 	branch := &Branch{
 		Name:              req.Name,
+		Slug:              finalSlug,
 		Address:           req.Address,
 		IsActive:          true,
 		IsAcceptingOrders: true,
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 	}
-	
+
 	return s.repo.Create(ctx, branch)
 }
 
@@ -66,15 +103,22 @@ func (s *service) UpdateBranch(ctx context.Context, id int, req UpdateBranchRequ
 	if req.Name != nil {
 		branch.Name = *req.Name
 	}
+
+	finalSlug, err := s.generateUniqueSlug(ctx, branch.Name, branch.ID)
+	if err != nil {
+		return err
+	}
+	branch.Slug = finalSlug
+
 	if req.Address != nil {
 		branch.Address = *req.Address
 	}
 	if req.IsActive != nil {
 		branch.IsActive = *req.IsActive
 	}
-	
+
 	branch.UpdatedAt = time.Now()
-	
+
 	return s.repo.Update(ctx, branch)
 }
 
@@ -90,7 +134,7 @@ func (s *service) DeleteBranch(ctx context.Context, id int) error {
 	// Soft delete
 	branch.IsActive = false
 	branch.UpdatedAt = time.Now()
-	
+
 	return s.repo.Update(ctx, branch)
 }
 

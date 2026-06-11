@@ -188,16 +188,16 @@ func (h *Handler) GetAllProducts(c *gin.Context) {
 }
 
 func (h *Handler) GetProductDetail(c *gin.Context) {
-	id, err := parseID(c)
-	if err != nil {
-		response.Error(c, 400, "invalid product id")
+	idOrSlug := c.Param("id")
+	if idOrSlug == "" {
+		response.Error(c, 400, "invalid product id or slug")
 		return
 	}
 
 	role := c.GetString("role")
 	includeRecipe := c.Query("include_recipe") == "true"
 
-	product, err := h.service.GetProductDetail(c.Request.Context(), id, role, includeRecipe)
+	product, err := h.service.GetProductDetail(c.Request.Context(), idOrSlug, role, includeRecipe)
 	if err != nil {
 		response.Error(c, 400, err.Error())
 		return

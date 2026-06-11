@@ -3,12 +3,16 @@ package promo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/gosimple/slug"
 )
 
 type Service interface {
 	CreatePromo(ctx context.Context, req PromoRequest) error
 	UpdatePromo(ctx context.Context, id int, req PromoRequest) error
+	GetPromoByIDOrSlug(ctx context.Context, idOrSlug string) (*Promo, error)
 	GetPromos(ctx context.Context, role string) ([]Promo, error)
 	ValidatePromo(ctx context.Context, code string, totalAmount float64) (*ValidatePromoResponse, error)
 	CalculateDiscount(code string, totalAmount float64) (discountAmount float64, finalAmount float64, err error)
@@ -20,6 +24,29 @@ type service struct {
 
 func NewService(repo Repository) Service {
 	return &service{repo}
+}
+
+func (s *service) generateUniqueSlug(title string, currentID int) (string, error) {
+	baseSlug := slug.Make(title)
+	finalSlug := baseSlug
+	counter := 1
+
+	for {
+		exists, err := s.repo.CheckSlugExists(finalSlug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			break
+		}
+		existingPromo, _ := s.repo.GetPromoByIDOrSlug(finalSlug)
+		if existingPromo != nil && existingPromo.ID == currentID {
+			break
+		}
+		finalSlug = fmt.Sprintf("%s-%d", baseSlug, counter)
+		counter++
+	}
+	return finalSlug, nil
 }
 
 func (s *service) CreatePromo(ctx context.Context, req PromoRequest) error {
@@ -37,9 +64,15 @@ func (s *service) CreatePromo(ctx context.Context, req PromoRequest) error {
 		return errors.New("valid_from cannot be after valid_until")
 	}
 
+	finalSlug, err := s.generateUniqueSlug(req.Title, 0)
+	if err != nil {
+		return err
+	}
+
 	promo := &Promo{
 		Code:              req.Code,
 		Title:             req.Title,
+		Slug:              finalSlug,
 		DiscountType:      req.DiscountType,
 		DiscountValue:     req.DiscountValue,
 		MaxDiscountAmount: req.MaxDiscountAmount,
@@ -72,8 +105,14 @@ func (s *service) UpdatePromo(ctx context.Context, id int, req PromoRequest) err
 		return errors.New("valid_from cannot be after valid_until")
 	}
 
+	finalSlug, err := s.generateUniqueSlug(req.Title, promo.ID)
+	if err != nil {
+		return err
+	}
+
 	promo.Code = req.Code
 	promo.Title = req.Title
+	promo.Slug = finalSlug
 	promo.DiscountType = req.DiscountType
 	promo.DiscountValue = req.DiscountValue
 	promo.MaxDiscountAmount = req.MaxDiscountAmount
@@ -82,6 +121,10 @@ func (s *service) UpdatePromo(ctx context.Context, id int, req PromoRequest) err
 	promo.ValidUntil = validUntil
 
 	return s.repo.UpdatePromo(promo)
+}
+
+func (s *service) GetPromoByIDOrSlug(ctx context.Context, idOrSlug string) (*Promo, error) {
+	return s.repo.GetPromoByIDOrSlug(idOrSlug)
 }
 
 func (s *service) GetPromos(ctx context.Context, role string) ([]Promo, error) {

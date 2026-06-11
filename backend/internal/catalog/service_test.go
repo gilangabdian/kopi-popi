@@ -21,6 +21,17 @@ func (m *MockRepository) FindAllCategories(ctx context.Context) ([]Category, err
 	}
 	return nil, args.Error(1)
 }
+func (m *MockRepository) FindCategoryByIDOrSlug(ctx context.Context, idOrSlug string) (*Category, error) {
+	args := m.Called(ctx, idOrSlug)
+	if args.Get(0) != nil {
+		return args.Get(0).(*Category), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+func (m *MockRepository) CheckCategorySlugExists(ctx context.Context, slug string) (bool, error) {
+	args := m.Called(ctx, slug)
+	return args.Bool(0), args.Error(1)
+}
 func (m *MockRepository) FindCategoryByID(ctx context.Context, id int) (*Category, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) != nil {
@@ -78,6 +89,17 @@ func (m *MockRepository) FindProductByID(ctx context.Context, id int) (*Product,
 	}
 	return nil, args.Error(1)
 }
+func (m *MockRepository) FindProductByIDOrSlug(ctx context.Context, idOrSlug string) (*Product, error) {
+	args := m.Called(ctx, idOrSlug)
+	if args.Get(0) != nil {
+		return args.Get(0).(*Product), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+func (m *MockRepository) CheckProductSlugExists(ctx context.Context, slug string) (bool, error) {
+	args := m.Called(ctx, slug)
+	return args.Bool(0), args.Error(1)
+}
 func (m *MockRepository) CreateProductWithBOM(ctx context.Context, product *Product, boms []ProductBOM) error {
 	return m.Called(ctx, product, boms).Error(0)
 }
@@ -101,9 +123,9 @@ func TestGetProductDetail_Admin_IncludeRecipe(t *testing.T) {
 		},
 	}
 
-	mockRepo.On("FindProductByID", mock.Anything, 1).Return(product, nil)
+	mockRepo.On("FindProductByIDOrSlug", mock.Anything, "1").Return(product, nil)
 
-	res, err := service.GetProductDetail(context.Background(), 1, "Admin", true)
+	res, err := service.GetProductDetail(context.Background(), "1", "Admin", true)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -123,10 +145,10 @@ func TestGetProductDetail_Cashier_TryIncludeRecipe(t *testing.T) {
 		},
 	}
 
-	mockRepo.On("FindProductByID", mock.Anything, 1).Return(product, nil)
+	mockRepo.On("FindProductByIDOrSlug", mock.Anything, "1").Return(product, nil)
 
 	// Cashier tries to include recipe, should be blocked
-	res, err := service.GetProductDetail(context.Background(), 1, "Cashier", true)
+	res, err := service.GetProductDetail(context.Background(), "1", "Cashier", true)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -147,6 +169,8 @@ func TestCreateProduct_Success(t *testing.T) {
 		},
 	}
 
+	mockRepo.On("CheckProductSlugExists", mock.Anything, mock.Anything).Return(false, nil)
+
 	mockRepo.On("CreateProductWithBOM", mock.Anything, mock.MatchedBy(func(p *Product) bool {
 		return p.Name == "Test" && p.Price == 10000 && p.IsActive == true
 	}), mock.MatchedBy(func(boms []ProductBOM) bool {
@@ -165,6 +189,7 @@ func TestCreateProduct_DBError(t *testing.T) {
 
 	req := ProductRequest{Name: "Test"}
 
+	mockRepo.On("CheckProductSlugExists", mock.Anything, mock.Anything).Return(false, nil)
 	mockRepo.On("CreateProductWithBOM", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("db error"))
 
 	err := service.CreateProduct(context.Background(), req)

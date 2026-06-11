@@ -6,6 +6,7 @@ type Promo struct {
 	ID                int        `gorm:"primaryKey" json:"id"`
 	Code              string     `gorm:"size:50;not null;unique" json:"code"`
 	Title             string     `gorm:"size:100;not null" json:"title"`
+	Slug              string     `gorm:"size:255;unique" json:"slug"`
 	DiscountType      string     `gorm:"type:enum('PERCENTAGE','FIXED');not null" json:"discount_type"`
 	DiscountValue     float64    `gorm:"not null" json:"discount_value"`
 	MaxDiscountAmount *float64   `json:"max_discount_amount,omitempty"`
