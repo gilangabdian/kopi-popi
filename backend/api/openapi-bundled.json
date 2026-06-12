@@ -2224,7 +2224,7 @@
                   },
                   "folder": {
                     "type": "string",
-                    "description": "Optional subfolder name (e.g. 'products', 'profiles')",
+                    "description": "Optional subfolder name (e.g. 'products', 'profiles', 'blogs')",
                     "default": "misc"
                   }
                 },
