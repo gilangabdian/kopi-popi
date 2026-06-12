@@ -52,11 +52,11 @@ Authorization: Bearer <your_jwt_token_here>
 Karena Golang didesain bebas (*unopinionated*), Kopi-Popi menggunakan modul **Media** terpusat untuk segala kebutuhan upload gambar (seperti Profil atau Foto Produk).
 
 **Alur Upload Gambar:**
-1. *Frontend* mengirim file fisik gambar (`multipart/form-data`) ke endpoint `POST /uploads`. Parameter `folder` bisa diisi `products` atau `profiles`.
+1. *Frontend* mengirim file fisik gambar (`multipart/form-data`) ke endpoint `POST /uploads`. Parameter `folder` bisa diisi `products`, `profiles`, atau `blogs`.
 2. *Backend* akan memvalidasi file (maksimal 5MB, format JPG/PNG/WEBP).
 3. Jika lolos, file disimpan secara lokal di dalam container Docker di folder `/app/uploads` (di-mapping ke Host `./uploads` lewat Docker Volume agar tidak hilang).
-4. *Backend* mengembalikan URL publik (misal: `http://localhost:8080/uploads/products/1234.jpg`).
-5. *Frontend* menyimpan URL tersebut, lalu memanggil `POST /products` atau `PATCH /users/me` dengan mengirim data JSON berisi `image_url` atau `profile_picture` menggunakan URL tersebut.
+4. *Backend* mengembalikan URL publik (misal: `http://localhost:8080/uploads/blogs/1234.jpg`).
+5. *Frontend* menyimpan URL tersebut, lalu memanggil `POST /products`, `PATCH /users/me`, atau `POST /blogs` dengan mengirim data JSON berisi `image_url`, `profile_picture`, atau menyisipkannya di `content` blog menggunakan URL tersebut.
 
 ---
 
