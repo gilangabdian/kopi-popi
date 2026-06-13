@@ -49,3 +49,48 @@ func TestCalculateEstimatedReadTime(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractFirstImage(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected *string
+	}{
+		{
+			name:     "No image",
+			content:  "This is a blog post.",
+			expected: nil,
+		},
+		{
+			name:     "Markdown image",
+			content:  "Here is an image ![alt text](https://example.com/image.png) and some text.",
+			expected: ptr("https://example.com/image.png"),
+		},
+		{
+			name:     "HTML image",
+			content:  `Here is an image <img src="https://example.com/image2.png" alt="test">`,
+			expected: ptr("https://example.com/image2.png"),
+		},
+		{
+			name:     "HTML single quote image",
+			content:  `Here is an image <img src='https://example.com/image3.png'>`,
+			expected: ptr("https://example.com/image3.png"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := extractFirstImage(tc.content)
+			if (result == nil && tc.expected != nil) || (result != nil && tc.expected == nil) || (result != nil && tc.expected != nil && *result != *tc.expected) {
+				var r, e string
+				if result != nil { r = *result } else { r = "nil" }
+				if tc.expected != nil { e = *tc.expected } else { e = "nil" }
+				t.Errorf("Expected %s, got %s", e, r)
+			}
+		})
+	}
+}
+
+func ptr(s string) *string {
+	return &s
+}

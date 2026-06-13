@@ -3,6 +3,7 @@ package blogs
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -34,6 +35,20 @@ func (s *service) CalculateEstimatedReadTime(content string) int {
 		return 1 // minimal 1 menit jika ada teks
 	}
 	return readTime
+}
+
+func extractFirstImage(content string) *string {
+	mdRegex := regexp.MustCompile(`\!\[.*?\]\((.*?)\)`)
+	if match := mdRegex.FindStringSubmatch(content); len(match) > 1 {
+		return &match[1]
+	}
+
+	htmlRegex := regexp.MustCompile(`<img[^>]+src=["']([^"']+)["']`)
+	if match := htmlRegex.FindStringSubmatch(content); len(match) > 1 {
+		return &match[1]
+	}
+
+	return nil
 }
 
 func (s *service) generateUniqueSlug(ctx context.Context, title string, currentID string) (string, error) {
@@ -78,6 +93,7 @@ func (s *service) CreateBlog(ctx context.Context, authorID string, req CreateBlo
 		Title:                 req.Title,
 		Slug:                  finalSlug,
 		Content:               req.Content,
+		CoverImage:            extractFirstImage(req.Content),
 		EstimatedReadTimeMins: s.CalculateEstimatedReadTime(req.Content),
 	}
 
@@ -117,6 +133,7 @@ func (s *service) UpdateBlog(ctx context.Context, id string, req UpdateBlogReque
 	blog.Title = req.Title
 	blog.Slug = finalSlug
 	blog.Content = req.Content
+	blog.CoverImage = extractFirstImage(req.Content)
 	blog.EstimatedReadTimeMins = s.CalculateEstimatedReadTime(req.Content)
 
 	err = s.repo.Update(ctx, blog)
