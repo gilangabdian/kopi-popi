@@ -15,7 +15,7 @@ export default function BlogCard({ image, date, readTime, title, slug }: BlogCar
       <div className="w-full bg-[#FFF5EA] rounded-xl overflow-hidden  transition-all flex flex-col h-full border border-[#F5E6D3]">
         {/* Image Container */}
         <div className="relative w-full aspect-[16/9] bg-gray-200 overflow-hidden">
-          <Image src={image} alt={title} fill className="object-cover transition-transform duration-500" />
+          <Image src={image} alt={title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover transition-transform duration-500" />
         </div>
 
         {/* Content */}

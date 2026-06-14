@@ -16,7 +16,8 @@ export default function Footer() {
                 alt="Kopi Popi Logo"
                 width={80}
                 height={50}
-                className="w-[80px] md:w-[80px] h-auto object-contain"
+                style={{ height: "auto" }}
+                className="w-[80px] md:w-[80px] object-contain"
               />
             </Link>
           </div>

@@ -6,7 +6,13 @@ export default function CtaSection() {
       <div className="w-full flex flex-col md:flex-row">
         {/* Left Column: Image */}
         <div className="w-full md:w-1/2 relative min-h-[300px] md:min-h-[400px]">
-          <Image src="/hero3.jpg" alt="Interior kedai kopi" fill className="object-cover" />
+          <Image 
+            src="/hero3.jpg" 
+            alt="Interior kedai kopi" 
+            fill 
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover" 
+          />
         </div>
 
         {/* Right Column: CTA Content */}
