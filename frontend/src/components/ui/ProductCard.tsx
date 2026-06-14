@@ -21,7 +21,7 @@ export default function ProductCard({ image, title, description, price, badge }:
     <div className="w-full bg-[#FFF5EA] rounded-lg overflow-hidden transition-shadow flex flex-col h-full border border-[#F5E6D3]">
       {/* Image Container */}
       <div className="relative w-full aspect-square bg-gray-100">
-        <Image src={image} alt={title} fill className="object-cover" />
+        <Image src={image} alt={title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
         {badge && (
           <div className="absolute top-3 left-3 bg-[#F8D4D4] text-black text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
             {badge}

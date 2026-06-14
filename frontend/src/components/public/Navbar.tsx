@@ -29,7 +29,8 @@ export default function Navbar() {
               alt="Kopi Popi Logo"
               width={50}
               height={20}
-              className="w-[35px] md:w-[50px] h-auto object-contain"
+              style={{ height: "auto" }}
+              className="w-[35px] md:w-[50px] object-contain"
               priority
             />
           </Link>
