@@ -2,6 +2,15 @@
 
 Sistem Point of Sale (POS) dan Inventory Multi-Outlet untuk Kopi-Popi.
 
+## Perancangan & Dokumentasi Sistem
+Untuk memudahkan pemahaman alur sistem secara menyeluruh, dokumentasi rancangan sistem dipecah ke dalam beberapa file khusus yang berada di folder `backend/docs/`.
+Silakan klik tautan di bawah ini untuk melihat detailnya:
+
+1. 👤 [Use Cases & Aktor](backend/docs/use-cases.md) - Penjelasan fungsionalitas tiap pengguna (Customer, Cashier, Manager, Admin).
+2. 🔄 [Activity Diagrams](backend/docs/activity-diagrams.md) - Alur kerja sistem (Autentikasi, Transaksi, Shift Kasir, Restock, dll).
+3. 🗄️ [Skema Database](backend/docs/database.md) - Penjelasan ringkas mengenai tabel-tabel dan relasinya.
+4. 🏗️ [Arsitektur & DDD](backend/docs/architecture.md) - Penjelasan struktur *Monorepo* dan implementasi *Domain-Driven Design*.
+
 ## Fitur Utama
 1. **Users & Auth**: Role management (Admin, Manager, Cashier, Customer), JWT, verifikasi OTP.
 2. **Branches**: Manajemen multi-cabang.
